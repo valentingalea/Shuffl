@@ -12,18 +12,18 @@ class SHUFFL_API APuck : public APawn
 	GENERATED_BODY()
 
 public:
-	// Sets default values for this pawn's properties
 	APuck();
 
-protected:
-	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
-
-public:	
-	// Called every frame
 	virtual void Tick(float DeltaTime) override;
-
-	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Setup)
+	class UStaticMeshComponent* ThePuck;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Setup)
+	class USpringArmComponent* TheSpringArm;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Setup)
+	class UCameraComponent* TheCamera;
 };
