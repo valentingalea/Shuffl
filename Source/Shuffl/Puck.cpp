@@ -3,6 +3,7 @@
 
 #include "Puck.h"
 
+#include "EngineMinimal.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
@@ -62,5 +63,13 @@ void APuck::Tick(float DeltaTime)
 void APuck::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
+
+	PlayerInputComponent->BindGesture(EKeys::Gesture_Flick, this, &APuck::ConsumeGesture);
 }
 
+void APuck::ConsumeGesture(float value)
+{
+	static uint64 id = 0;
+	GEngine->AddOnScreenDebugMessage(id++, 1/*sec*/, FColor::Green,
+		FString::Printf(TEXT("%f"), value));
+}
