@@ -26,6 +26,7 @@ APuck::APuck()
 
 	// create the class and give some decent defaults as it's hard to navigate and
 	// see the overrides in a Blueprint'able subclass
+	// this has the disadvantage that now we will multiple defaults :(
 	TheSpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
 	TheSpringArm->SetupAttachment(RootComponent);
 	TheSpringArm->SetUsingAbsoluteRotation(true); // not affected by rotation of target
@@ -40,8 +41,8 @@ APuck::APuck()
 	
 	// Docs quote: "Determines which PlayerController, if any, should automatically possess the pawn
 	// when the level starts or when the pawn is spawned"
-	// this is crucial otherwise if you place this pawn in a scene it will be ignored
-	AutoPossessPlayer = EAutoReceiveInput::Player0;
+	// disable so the PC will spawn us, but this is a good shortcut for tests
+	AutoPossessPlayer = EAutoReceiveInput::Disabled;
 
 	PrimaryActorTick.bCanEverTick = true;
 }
@@ -50,8 +51,6 @@ APuck::APuck()
 void APuck::BeginPlay()
 {
 	Super::BeginPlay();
-
-	ensure(DetailViewCamera != nullptr);
 }
 
 // Called every frame

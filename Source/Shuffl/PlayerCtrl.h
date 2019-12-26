@@ -12,20 +12,26 @@ class SHUFFL_API APlayerCtrl : public APlayerController
 	GENERATED_BODY()
 
 public:
+	APlayerCtrl();
+
 	virtual void BeginPlay() override;
 	virtual void SetupInputComponent() override;
 
-	// guarantees to return a valid one, thus enforcing a contract
-	// TODO: will have to see about cases where we don't posses - like in Main Menu
-	APuck& GetPuck();
+	APuck* GetPuck();
 
 	void ConsumeGesture(float);
 	void SwitchToDetailView();
 	void SwitchToPlayView();
+	void Rethrow();
+
+	UPROPERTY()
+	class ACameraActor* DetailViewCamera;
+
+	UClass* PawnClass;
 };
 
-inline APuck& APlayerCtrl::GetPuck()
+inline APuck* APlayerCtrl::GetPuck()
 {
-	ensure(GetPawn() != nullptr && !GetPawn()->IsPendingKill());
-	return *GetPawn<APuck>();
+	ensure(GetPawn() && !GetPawn()->IsPendingKill());
+	return GetPawn<APuck>();
 }

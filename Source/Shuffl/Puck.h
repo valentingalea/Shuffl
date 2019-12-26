@@ -27,7 +27,4 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Setup)
 	class UCameraComponent* MainCamera;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Setup)
-	class ACameraActor* DetailViewCamera;
 };

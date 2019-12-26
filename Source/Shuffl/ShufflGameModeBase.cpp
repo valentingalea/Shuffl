@@ -8,9 +8,7 @@
 
 AShufflGameModeBase::AShufflGameModeBase()
 {
-	static ConstructorHelpers::FClassFinder<APawn> Pawn(TEXT("/Game/BPC_Pawn"));
-	ensure(Pawn.Class);
-	DefaultPawnClass = Pawn.Class;
+	DefaultPawnClass = nullptr; // the PC below will handle this
 
 	PlayerControllerClass = APlayerCtrl::StaticClass();
 }
