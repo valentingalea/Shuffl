@@ -16,9 +16,6 @@ public:
 
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-
-	void ConsumeGesture(float);
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Setup)
 	class UStaticMeshComponent* ThePuck;
@@ -27,5 +24,8 @@ public:
 	class USpringArmComponent* TheSpringArm;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Setup)
-	class UCameraComponent* TheCamera;
+	class UCameraComponent* MainCamera;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Setup)
+	class ACameraActor* DetailViewCamera;
 };

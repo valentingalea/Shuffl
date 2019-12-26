@@ -3,12 +3,11 @@
 
 #include "Puck.h"
 
-#include "EngineMinimal.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Camera/CameraComponent.h"
+#include "Camera/CameraActor.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Components/StaticMeshComponent.h"
-#include "Components/InputComponent.h"
 
 // Sets default values
 APuck::APuck()
@@ -35,9 +34,9 @@ APuck::APuck()
 	TheSpringArm->bEnableCameraLag = true;
 	TheSpringArm->bDoCollisionTest = false;
 
-	TheCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
-	TheCamera->SetupAttachment(TheSpringArm, USpringArmComponent::SocketName);
-	TheCamera->bUsePawnControlRotation = false; // We don't want the controller rotating the camera
+	MainCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
+	MainCamera->SetupAttachment(TheSpringArm, USpringArmComponent::SocketName);
+	MainCamera->bUsePawnControlRotation = false; // We don't want the controller rotating the camera
 	
 	// Docs quote: "Determines which PlayerController, if any, should automatically possess the pawn
 	// when the level starts or when the pawn is spawned"
@@ -51,25 +50,12 @@ APuck::APuck()
 void APuck::BeginPlay()
 {
 	Super::BeginPlay();
+
+	ensure(DetailViewCamera != nullptr);
 }
 
 // Called every frame
 void APuck::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-}
-
-// Called to bind functionality to input
-void APuck::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
-{
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
-
-	PlayerInputComponent->BindGesture(EKeys::Gesture_Flick, this, &APuck::ConsumeGesture);
-}
-
-void APuck::ConsumeGesture(float value)
-{
-	static uint64 id = 0;
-	GEngine->AddOnScreenDebugMessage(id++, 1/*sec*/, FColor::Green,
-		FString::Printf(TEXT("%f"), value));
 }
