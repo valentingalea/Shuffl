@@ -59,3 +59,8 @@ void APuck::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 }
+
+void APuck::ApplyForce(FVector2D force)
+{
+	ThePuck->AddImpulse(FVector(force.X, force.Y, 0));
+}

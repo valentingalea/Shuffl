@@ -32,6 +32,8 @@ void APlayerCtrl::ConsumeGesture(float value)
 	static uint64 id = 0;
 	GEngine->AddOnScreenDebugMessage(id++, 1/*sec*/, FColor::Green,
 		FString::Printf(TEXT("%f"), value));
+
+	GetPuck().ApplyForce(FVector2D(value, 0));
 }
 
 void APlayerCtrl::SwitchToDetailView()

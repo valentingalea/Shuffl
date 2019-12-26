@@ -17,6 +17,8 @@ public:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
 
+	void ApplyForce(FVector2D);
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Setup)
 	class UStaticMeshComponent* ThePuck;
 
