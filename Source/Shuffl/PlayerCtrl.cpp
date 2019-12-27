@@ -9,6 +9,8 @@
 #include "Camera/CameraActor.h"
 #include "GameFramework/PlayerStart.h"
 
+#include "GameSubSys.h"
+
 APlayerCtrl::APlayerCtrl()
 {
 	static ConstructorHelpers::FClassFinder<APawn> pawn(TEXT("/Game/BPC_Pawn"));
@@ -30,6 +32,13 @@ void APlayerCtrl::BeginPlay()
 		return nullptr;
 	}();
 	ensure(DetailViewCamera);
+
+	if (auto sys = UGameSubSys::Get(this)) {
+		sys->AwardPoints.BindLambda([](int points) {
+			GEngine->AddOnScreenDebugMessage(-1, 1/*sec*/, FColor::Green,
+				FString::Printf(TEXT("Points: %i"), points));
+		});
+	}
 
 	Rethrow();
 }
