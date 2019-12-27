@@ -20,7 +20,8 @@ public:
 	UClass* PawnClass;
 	APuck* GetPuck();
 
-	void ConsumeTouch(const ETouchIndex::Type FingerIndex, const FVector Location);
+	void ConsumeTouchOn(const ETouchIndex::Type FingerIndex, const FVector Location);
+	void ConsumeTouchOff(const ETouchIndex::Type FingerIndex, const FVector Location);
 	void ConsumeGesture(float);
 
 	void SwitchToDetailView();
@@ -29,6 +30,11 @@ public:
 
 	void Rethrow();
 	FVector StartPoint, StartLine;
+	enum struct EThrowSequence
+	{
+		LineUp,
+		Shoot
+	} ThrowSeq;
 };
 
 inline APuck* APlayerCtrl::GetPuck()

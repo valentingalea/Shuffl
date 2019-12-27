@@ -74,8 +74,9 @@ void APlayerCtrl::SetupInputComponent()
 
 	InputComponent->BindAction("Rethrow", IE_Released, this, &APlayerCtrl::Rethrow);
 
-	InputComponent->BindTouch(EInputEvent::IE_Pressed, this, &APlayerCtrl::ConsumeTouch);
-	InputComponent->BindTouch(EInputEvent::IE_Repeat, this, &APlayerCtrl::ConsumeTouch);
+	InputComponent->BindTouch(EInputEvent::IE_Pressed, this, &APlayerCtrl::ConsumeTouchOn);
+	InputComponent->BindTouch(EInputEvent::IE_Repeat, this, &APlayerCtrl::ConsumeTouchOn);
+	InputComponent->BindTouch(EInputEvent::IE_Released, this, &APlayerCtrl::ConsumeTouchOff);
 }
 
 void APlayerCtrl::ConsumeGesture(float value)
@@ -84,13 +85,21 @@ void APlayerCtrl::ConsumeGesture(float value)
 	GEngine->AddOnScreenDebugMessage(id++, 1/*sec*/, FColor::Green,
 		FString::Printf(TEXT("%f"), value));
 
+	if ((value < 10.f) && ThrowSeq != EThrowSequence::Shoot) { //TODO: extract value
+		return;
+	}
+
 	if (auto p = GetPuck()) {
 		p->ApplyForce(FVector2D(value, 0));
 	}
 }
 
-void APlayerCtrl::ConsumeTouch(const ETouchIndex::Type FingerIndex, const FVector Location)
+void APlayerCtrl::ConsumeTouchOn(const ETouchIndex::Type FingerIndex, const FVector Location)
 {
+	if (ThrowSeq != EThrowSequence::LineUp) {
+		return;
+	}
+
 	FVector2D ScreenSpaceLocation(Location);
 	FHitResult HitResult;
 	GetHitResultAtScreenPosition(ScreenSpaceLocation, CurrentClickTraceChannel, true, HitResult);
@@ -107,18 +116,23 @@ void APlayerCtrl::ConsumeTouch(const ETouchIndex::Type FingerIndex, const FVecto
 
 		//TODO: wire this via the Pawn
 		GetPuck()->FindComponentByClass<UStaticMeshComponent>()->SetWorldLocation(
-			location, false, nullptr, ETeleportType::ResetPhysics);
+			location, false, nullptr, ETeleportType::TeleportPhysics);
 	}
+}
+
+void APlayerCtrl::ConsumeTouchOff(const ETouchIndex::Type FingerIndex, const FVector Location)
+{
+	ThrowSeq = EThrowSequence::Shoot;
 }
 
 void APlayerCtrl::SwitchToDetailView()
 {
-	// some other variables to play with - but not needed here
+	//INFO: some other variables to play with - but not needed here
 	//bAutoManageActiveCameraTarget = false;
 	//bFindCameraComponentWhenViewTarget = false;
 	//GetPuck().FindComponentByClass<UCameraComponent>()->Deactivate();
 
-	SetViewTargetWithBlend(DetailViewCamera, 0.5f);
+	SetViewTargetWithBlend(DetailViewCamera, 0.5f); //TODO: collect these and data-drive
 }
 
 void APlayerCtrl::SwitchToPlayView()
@@ -136,4 +150,6 @@ void APlayerCtrl::Rethrow()
 	}
 
 	Possess(new_puck);
+
+	ThrowSeq = EThrowSequence::LineUp;
 }
