@@ -8,6 +8,7 @@
 #include "Components/InputComponent.h"
 #include "Camera/CameraActor.h"
 #include "GameFramework/PlayerStart.h"
+#include "GameFramework/PlayerState.h"
 
 #include "GameSubSys.h"
 
@@ -32,11 +33,14 @@ void APlayerCtrl::BeginPlay()
 		return nullptr;
 	}();
 	ensure(DetailViewCamera);
-
+	
 	if (auto sys = UGameSubSys::Get(this)) {
-		sys->AwardPoints.BindLambda([](int points) {
+		sys->AwardPoints.BindLambda([ps = PlayerState](int points) {
+			if (!ps) return;
+			ps->Score += points;
+
 			GEngine->AddOnScreenDebugMessage(-1, 1/*sec*/, FColor::Green,
-				FString::Printf(TEXT("Points: %i"), points));
+				FString::Printf(TEXT("Points: %i"), int(ps->Score)));
 		});
 	}
 
