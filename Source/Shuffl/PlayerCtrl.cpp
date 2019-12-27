@@ -9,11 +9,13 @@
 #include "Camera/CameraActor.h"
 #include "GameFramework/PlayerStart.h"
 #include "GameFramework/PlayerState.h"
+#include "DrawDebugHelpers.h"
 
 #include "GameSubSys.h"
 
 APlayerCtrl::APlayerCtrl()
 {
+	//TODO: extract this outside (.ini for ex)
 	static ConstructorHelpers::FClassFinder<APawn> pawn(TEXT("/Game/BPC_Pawn"));
 	PawnClass = pawn.Class;
 }
@@ -23,16 +25,28 @@ void APlayerCtrl::BeginPlay()
 	Super::BeginPlay();
 
 	// inviolable contracts
-	ensure(PawnClass);
-	DetailViewCamera = [this]() -> ACameraActor* {
-		for (TActorIterator<ACameraActor> i(GetWorld()); i; ++i) {
-			if (i->ActorHasTag(TEXT("DetailViewCamera"))) {
-				return *i;
+	//TODO: do something more radical if these contract are violated
+	{
+		ensure(PawnClass);
+	}
+	{
+		//TODO: find a better way to reference this
+		DetailViewCamera = [this]() -> ACameraActor* {
+			for (TActorIterator<ACameraActor> i(GetWorld()); i; ++i) {
+				if (i->ActorHasTag(TEXT("DetailViewCamera"))) {
+					return *i;
+				}
 			}
-		}
-		return nullptr;
-	}();
-	ensure(DetailViewCamera);
+			return nullptr;
+		}();
+		ensure(DetailViewCamera);
+	}
+	{
+		auto iter = TActorIterator<APlayerStart>(GetWorld());
+		ensure(*iter);
+		StartLine = FVector(0, 51.f, 0); //TODO: find a way to data drive this
+		StartPoint = (*iter)->GetActorLocation() - StartLine / 2.f;
+	}
 	
 	if (auto sys = UGameSubSys::Get(this)) {
 		sys->AwardPoints.BindLambda([ps = PlayerState](int points) {
@@ -59,6 +73,9 @@ void APlayerCtrl::SetupInputComponent()
 	InputComponent->BindAction(dv, IE_Released, this, &APlayerCtrl::SwitchToPlayView);
 
 	InputComponent->BindAction("Rethrow", IE_Released, this, &APlayerCtrl::Rethrow);
+
+	InputComponent->BindTouch(EInputEvent::IE_Pressed, this, &APlayerCtrl::ConsumeTouch);
+	InputComponent->BindTouch(EInputEvent::IE_Repeat, this, &APlayerCtrl::ConsumeTouch);
 }
 
 void APlayerCtrl::ConsumeGesture(float value)
@@ -69,6 +86,28 @@ void APlayerCtrl::ConsumeGesture(float value)
 
 	if (auto p = GetPuck()) {
 		p->ApplyForce(FVector2D(value, 0));
+	}
+}
+
+void APlayerCtrl::ConsumeTouch(const ETouchIndex::Type FingerIndex, const FVector Location)
+{
+	FVector2D ScreenSpaceLocation(Location);
+	FHitResult HitResult;
+	GetHitResultAtScreenPosition(ScreenSpaceLocation, CurrentClickTraceChannel, true, HitResult);
+	
+	if (HitResult.bBlockingHit)
+	{
+		// project the touched point onto the start line
+		const auto &P = HitResult.ImpactPoint;
+		const FVector AP = P - StartPoint;
+		FVector AB = StartLine;
+		AB.Normalize();
+		const float d = FVector::DotProduct(AP, AB);
+		const FVector location = StartPoint + FVector(0, d, 0);
+
+		//TODO: wire this via the Pawn
+		GetPuck()->FindComponentByClass<UStaticMeshComponent>()->SetWorldLocation(
+			location, false, nullptr, ETeleportType::ResetPhysics);
 	}
 }
 
@@ -89,14 +128,7 @@ void APlayerCtrl::SwitchToPlayView()
 
 void APlayerCtrl::Rethrow()
 {
-	auto iter = TActorIterator<APlayerStart>(GetWorld());
-	APlayerStart *start = *iter;
-	if (!start) {
-		ensure(0);
-		return;
-	}
-	
-	const FVector location = start->GetActorLocation();
+	const FVector location = StartPoint + StartLine / 2.f;
 	APuck *new_puck = static_cast<APuck *>(GetWorld()->SpawnActor(PawnClass, &location));
 	if (!new_puck) {
 		ensure(0);

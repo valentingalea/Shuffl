@@ -17,17 +17,18 @@ public:
 	virtual void BeginPlay() override;
 	virtual void SetupInputComponent() override;
 
+	UClass* PawnClass;
 	APuck* GetPuck();
 
+	void ConsumeTouch(const ETouchIndex::Type FingerIndex, const FVector Location);
 	void ConsumeGesture(float);
+
 	void SwitchToDetailView();
 	void SwitchToPlayView();
+	UPROPERTY() class ACameraActor* DetailViewCamera;
+
 	void Rethrow();
-
-	UPROPERTY()
-	class ACameraActor* DetailViewCamera;
-
-	UClass* PawnClass;
+	FVector StartPoint, StartLine;
 };
 
 inline APuck* APlayerCtrl::GetPuck()
