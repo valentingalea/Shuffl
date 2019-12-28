@@ -14,10 +14,8 @@ class SHUFFL_API APuck : public APawn
 public:
 	APuck();
 
-	virtual void BeginPlay() override;
-	virtual void Tick(float DeltaTime) override;
-
 	void ApplyForce(FVector2D);
+	void MoveTo(FVector);
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Setup)
 	class UStaticMeshComponent* ThePuck;

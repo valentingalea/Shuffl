@@ -48,22 +48,17 @@ APuck::APuck()
 	// disable so the PC will spawn us, but this is a good shortcut for tests
 	AutoPossessPlayer = EAutoReceiveInput::Disabled;
 
-	PrimaryActorTick.bCanEverTick = true;
-}
-
-// Called when the game starts or when spawned
-void APuck::BeginPlay()
-{
-	Super::BeginPlay();
-}
-
-// Called every frame
-void APuck::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
+	PrimaryActorTick.bCanEverTick = false;
 }
 
 void APuck::ApplyForce(FVector2D force)
 {
 	ThePuck->AddImpulse(FVector(force.X, force.Y, 0));
+}
+
+void APuck::MoveTo(FVector location)
+{
+	ThePuck->SetWorldLocationAndRotation(location, FRotator::ZeroRotator,
+		false/*sweep*/, nullptr/*hit result*/, ETeleportType::TeleportPhysics);
+	//NOTE: ResetPhysics causes problems
 }
