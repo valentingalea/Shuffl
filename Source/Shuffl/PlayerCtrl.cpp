@@ -91,15 +91,19 @@ void APlayerCtrl::ConsumeTouchOff(const ETouchIndex::Type FingerIndex, const FVe
 	float distance = gestureVector.Size();
 	float velocity = distance / deltaTime;
 	
-	//static uint64 id = 0;
-	//GEngine->AddOnScreenDebugMessage(id++, 1/*sec*/, FColor::Green,
-	//	FString::Printf(TEXT("%f %f"), gestureVector.X, gestureVector.Y));
+	static uint64 id = 0;
+	GEngine->AddOnScreenDebugMessage(id++, 1/*sec*/, FColor::Green,
+		FString::Printf(TEXT("(%f %f) vel %f"), gestureVector.X, gestureVector.Y, velocity));
 
 	if (velocity < 100.f) {
 		MovePuckBasedOnScreenSpace(gestureEndPoint);
 	} else { 
 		if (auto p = GetPuck()) {
-			const auto maxForce = 150.f;
+#if 1
+			gestureVector.Normalize();
+			gestureVector *= velocity / 25.f;
+#endif
+			constexpr auto maxForce = 150.f;
 			auto X = FMath::Clamp(FMath::Abs(gestureVector.Y), 0.f, maxForce);
 			auto Y = FMath::Clamp(gestureVector.X, -maxForce, maxForce);
 			p->ApplyForce(FVector2D(X, Y));
@@ -123,6 +127,7 @@ void APlayerCtrl::MovePuckBasedOnScreenSpace(FVector2D ScreenSpaceLocation)
 		AB.Normalize();
 		const float d = FVector::DotProduct(AP, AB);
 		const FVector location = StartingPoint + FVector(0, d, 0);
+		//DrawDebugSphere(GetWorld(), location, 5, 4, FColor::Red, false, 3);
 
 		if (auto p = GetPuck()) {
 			p->MoveTo(location);
