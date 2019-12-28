@@ -10,6 +10,7 @@
 #include "GameFramework/PlayerStart.h"
 #include "GameFramework/PlayerState.h"
 #include "DrawDebugHelpers.h"
+#include "Math/UnrealMathUtility.h"
 
 #include "GameSubSys.h"
 
@@ -44,8 +45,8 @@ void APlayerCtrl::BeginPlay()
 	{
 		auto iter = TActorIterator<APlayerStart>(GetWorld());
 		ensure(*iter);
-		StartLine = FVector(0, 51.f, 0); //TODO: find a way to data drive this
-		StartPoint = (*iter)->GetActorLocation() - StartLine / 2.f;
+		StartingLine = FVector(0, 51.f, 0); //TODO: find a way to data drive this
+		StartingPoint = (*iter)->GetActorLocation() - StartingLine / 2.f;
 	}
 	
 	if (auto sys = UGameSubSys::Get(this)) {
@@ -58,7 +59,7 @@ void APlayerCtrl::BeginPlay()
 		});
 	}
 
-	Rethrow();
+	SetupNewThrow();
 }
 
 // Called to bind functionality to input
@@ -66,83 +67,72 @@ void APlayerCtrl::SetupInputComponent()
 {
 	Super::SetupInputComponent();
 
-	InputComponent->BindGesture(EKeys::Gesture_Flick, this, &APlayerCtrl::ConsumeGesture);
-
 	constexpr auto dv = "DetailView";
 	InputComponent->BindAction(dv, IE_Pressed, this, &APlayerCtrl::SwitchToDetailView);
 	InputComponent->BindAction(dv, IE_Released, this, &APlayerCtrl::SwitchToPlayView);
 
-	InputComponent->BindAction("Rethrow", IE_Released, this, &APlayerCtrl::Rethrow);
+	InputComponent->BindAction("Rethrow", IE_Released, this, &APlayerCtrl::SetupNewThrow);
 
 	InputComponent->BindTouch(EInputEvent::IE_Pressed, this, &APlayerCtrl::ConsumeTouchOn);
-	InputComponent->BindTouch(EInputEvent::IE_Repeat, this, &APlayerCtrl::ConsumeTouchOn);
 	InputComponent->BindTouch(EInputEvent::IE_Released, this, &APlayerCtrl::ConsumeTouchOff);
-}
-
-void APlayerCtrl::ConsumeGesture(float value)
-{
-	static uint64 id = 0;
-	GEngine->AddOnScreenDebugMessage(id++, 1/*sec*/, FColor::Green,
-		FString::Printf(TEXT("%f"), value));
-
-	if ((value < 10.f) && ThrowSeq != EThrowSequence::Shoot) { //TODO: extract value
-		return;
-	}
-
-	if (auto p = GetPuck()) {
-		p->ApplyForce(FVector2D(value, 0));
-	}
 }
 
 void APlayerCtrl::ConsumeTouchOn(const ETouchIndex::Type FingerIndex, const FVector Location)
 {
-	if (ThrowSeq != EThrowSequence::LineUp) {
-		return;
-	}
-
-	FVector2D ScreenSpaceLocation(Location);
-	FHitResult HitResult;
-	GetHitResultAtScreenPosition(ScreenSpaceLocation, CurrentClickTraceChannel, true, HitResult);
-	
-	if (HitResult.bBlockingHit)
-	{
-		// project the touched point onto the start line
-		const auto &P = HitResult.ImpactPoint;
-		const FVector AP = P - StartPoint;
-		FVector AB = StartLine;
-		AB.Normalize();
-		const float d = FVector::DotProduct(AP, AB);
-		const FVector location = StartPoint + FVector(0, d, 0);
-
-		//TODO: wire this via the Pawn
-		GetPuck()->FindComponentByClass<UStaticMeshComponent>()->SetWorldLocation(
-			location, false, nullptr, ETeleportType::TeleportPhysics);
-	}
+	ThrowStartTime = GetWorld()->GetRealTimeSeconds();
+	ThrowStartPoint = FVector2D(Location);
 }
 
 void APlayerCtrl::ConsumeTouchOff(const ETouchIndex::Type FingerIndex, const FVector Location)
 {
-	ThrowSeq = EThrowSequence::Shoot;
+	float deltaTime = GetWorld()->GetRealTimeSeconds() - ThrowStartTime;
+	FVector2D gestureEndPoint = FVector2D(Location);
+	FVector2D gestureVector = gestureEndPoint - ThrowStartPoint;
+	float distance = gestureVector.Size();
+	float velocity = distance / deltaTime;
+	
+	//static uint64 id = 0;
+	//GEngine->AddOnScreenDebugMessage(id++, 1/*sec*/, FColor::Green,
+	//	FString::Printf(TEXT("%f %f"), gestureVector.X, gestureVector.Y));
+
+	if (velocity < 100.f) {
+		MovePuckBasedOnScreenSpace(gestureEndPoint);
+	} else { 
+		if (auto p = GetPuck()) {
+			const auto maxForce = 150.f;
+			auto X = FMath::Clamp(FMath::Abs(gestureVector.Y), 0.f, maxForce);
+			auto Y = FMath::Clamp(gestureVector.X, -maxForce, maxForce);
+			p->ApplyForce(FVector2D(X, Y));
+		}
+	}
 }
 
-void APlayerCtrl::SwitchToDetailView()
+void APlayerCtrl::MovePuckBasedOnScreenSpace(FVector2D ScreenSpaceLocation)
 {
-	//INFO: some other variables to play with - but not needed here
-	//bAutoManageActiveCameraTarget = false;
-	//bFindCameraComponentWhenViewTarget = false;
-	//GetPuck().FindComponentByClass<UCameraComponent>()->Deactivate();
+	FHitResult HitResult;
+	GetHitResultAtScreenPosition(ScreenSpaceLocation, ECC_Visibility,
+		false/*trace complex*/, HitResult);
 
-	SetViewTargetWithBlend(DetailViewCamera, 0.5f); //TODO: collect these and data-drive
+	if (HitResult.bBlockingHit)
+	{
+		// project the touched point onto the start line
+		const auto &P = HitResult.ImpactPoint;
+		//DrawDebugSphere(GetWorld(), P, 5, 4, FColor::Green, false, 3);
+		const FVector AP = P - StartingPoint;
+		FVector AB = StartingLine;
+		AB.Normalize();
+		const float d = FVector::DotProduct(AP, AB);
+		const FVector location = StartingPoint + FVector(0, d, 0);
+
+		if (auto p = GetPuck()) {
+			p->MoveTo(location);
+		}
+	}
 }
 
-void APlayerCtrl::SwitchToPlayView()
+void APlayerCtrl::SetupNewThrow()
 {
-	SetViewTargetWithBlend(GetPuck(), 0.25f);
-}
-
-void APlayerCtrl::Rethrow()
-{
-	const FVector location = StartPoint + StartLine / 2.f;
+	const FVector location = StartingPoint + StartingLine / 2.f;
 	APuck *new_puck = static_cast<APuck *>(GetWorld()->SpawnActor(PawnClass, &location));
 	if (!new_puck) {
 		ensure(0);
@@ -150,6 +140,14 @@ void APlayerCtrl::Rethrow()
 	}
 
 	Possess(new_puck);
+}
 
-	ThrowSeq = EThrowSequence::LineUp;
+void APlayerCtrl::SwitchToDetailView()
+{
+	SetViewTargetWithBlend(DetailViewCamera, 0.5f); //TODO: collect these and data-drive
+}
+
+void APlayerCtrl::SwitchToPlayView()
+{
+	SetViewTargetWithBlend(GetPuck(), 0.25f);
 }

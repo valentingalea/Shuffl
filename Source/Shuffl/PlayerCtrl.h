@@ -28,13 +28,11 @@ public:
 	void SwitchToPlayView();
 	UPROPERTY() class ACameraActor* DetailViewCamera;
 
-	void Rethrow();
-	FVector StartPoint, StartLine;
-	enum struct EThrowSequence
-	{
-		LineUp,
-		Shoot
-	} ThrowSeq;
+	void MovePuckBasedOnScreenSpace(FVector2D);
+	void SetupNewThrow();
+	FVector StartingPoint, StartingLine;
+	float ThrowStartTime;
+	FVector2D ThrowStartPoint;
 };
 
 inline APuck* APlayerCtrl::GetPuck()
