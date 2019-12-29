@@ -3,7 +3,7 @@
 
 #include "PlayerCtrl.h"
 
-#include "EngineMinimal.h"
+#include "Engine.h"
 #include "EngineUtils.h"
 #include "Components/InputComponent.h"
 #include "Camera/CameraActor.h"
@@ -15,8 +15,10 @@
 
 #include "GameSubSys.h"
 
-APlayerCtrl::APlayerCtrl()
+ASceneProps::ASceneProps()
 {
+	auto root = CreateDefaultSubobject<USceneComponent>(TEXT("Dummy"));
+	RootComponent = root;
 }
 
 void APlayerCtrl::BeginPlay()
@@ -27,31 +29,22 @@ void APlayerCtrl::BeginPlay()
 	//TODO: do something more radical if these contract are violated
 	{
 		ensure(PawnClass);
-	}
-	{
-		//TODO: find a better way to reference this
-		DetailViewCamera = [this]() -> ACameraActor* {
-			for (TActorIterator<ACameraActor> i(GetWorld()); i; ++i) {
-				if (i->ActorHasTag(TEXT("DetailViewCamera"))) {
-					return *i;
-				}
-			}
-			return nullptr;
-		}();
-		ensure(DetailViewCamera);
-	}
-	{
-		auto iter = TActorIterator<APlayerStart>(GetWorld());
-		ensure(*iter);
-		StartingLine = FVector(0, 51.f, 0); //TODO: find a way to data drive this
-		StartingPoint = (*iter)->GetActorLocation() - StartingLine / 2.f;
-	}
-	{
+
 		ensure(HUDClass);
 		auto widget = CreateWidget<UUserWidget>(this, HUDClass);
 		widget->AddToViewport();
 	}
-	
+
+	{
+		auto iter = TActorIterator<ASceneProps>(GetWorld());
+		ensure(*iter);
+		SceneProps = *iter;
+		ensure(SceneProps->DetailViewCamera);
+		ensure(SceneProps->StartingPoint);
+
+		StartingPoint = (SceneProps->StartingPoint)->GetActorLocation() - StartingLine / 2.f;
+	}
+
 	if (auto sys = UGameSubSys::Get(this)) {
 		sys->AwardPoints.BindLambda([ps = PlayerState, sys](int points) {
 			if (!ps) return;
@@ -64,7 +57,6 @@ void APlayerCtrl::BeginPlay()
 	SetupNewThrow();
 }
 
-// Called to bind functionality to input
 void APlayerCtrl::SetupInputComponent()
 {
 	Super::SetupInputComponent();
@@ -93,21 +85,19 @@ void APlayerCtrl::ConsumeTouchOff(const ETouchIndex::Type FingerIndex, const FVe
 	float distance = gestureVector.Size();
 	float velocity = distance / deltaTime;
 	
-	//static uint64 id = 0;
-	//GEngine->AddOnScreenDebugMessage(id++, 1/*sec*/, FColor::Green,
-	//	FString::Printf(TEXT("(%f %f) vel %f"), gestureVector.X, gestureVector.Y, velocity));
+	static uint64 id = 0;
+	GEngine->AddOnScreenDebugMessage(id++, 1/*sec*/, FColor::Green,
+		FString::Printf(TEXT("(%f %f) vel %f"), gestureVector.X, gestureVector.Y, velocity));
 
-	if (velocity < 100.f) {
+	if (velocity < EscapeVelocity) {
 		MovePuckBasedOnScreenSpace(gestureEndPoint);
 	} else { 
 		if (auto p = GetPuck()) {
-#if 1
 			gestureVector.Normalize();
-			gestureVector *= velocity / 25.f;
-#endif
-			constexpr auto maxForce = 150.f;
-			auto X = FMath::Clamp(FMath::Abs(gestureVector.Y), 0.f, maxForce);
-			auto Y = FMath::Clamp(gestureVector.X, -maxForce, maxForce);
+			gestureVector *= velocity / ThrowForceScaling;
+
+			auto X = FMath::Clamp(FMath::Abs(gestureVector.Y), 0.f, ThrowForceMax);
+			auto Y = FMath::Clamp(gestureVector.X, -ThrowForceMax, ThrowForceMax);
 			p->ApplyForce(FVector2D(X, Y));
 		}
 	}
@@ -145,16 +135,17 @@ void APlayerCtrl::SetupNewThrow()
 		ensure(0);
 		return;
 	}
-
+	
 	Possess(new_puck);
 }
 
 void APlayerCtrl::SwitchToDetailView()
 {
-	SetViewTargetWithBlend(DetailViewCamera, 0.5f); //TODO: collect these and data-drive
+	if (!SceneProps.IsValid()) return;
+	SetViewTargetWithBlend(SceneProps->DetailViewCamera, DetailViewCameraSwitchSpeed);
 }
 
 void APlayerCtrl::SwitchToPlayView()
 {
-	SetViewTargetWithBlend(GetPuck(), 0.25f);
+	SetViewTargetWithBlend(GetPuck(), MainCameraSwitchSpeed);
 }
