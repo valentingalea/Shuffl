@@ -1,7 +1,7 @@
 // Copyright (C) 2020 Valentin Galea
 
 #include "GameSubSys.h"
-#include "EngineMinimal.h"
+#include "Engine.h"
 #include "Engine\GameInstance.h"
 
 UGameSubSys* UGameSubSys::Get(const UObject* ContextObject)

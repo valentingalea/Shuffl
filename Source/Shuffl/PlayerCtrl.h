@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GameFramework\PlayerController.h"
 #include "Puck.h"
 #include "PlayerCtrl.generated.h"
 
@@ -30,7 +31,9 @@ private:
 	void ConsumeTouchOff(const ETouchIndex::Type FingerIndex, const FVector Location);
 	void ConsumeGesture(float);
 
+	UFUNCTION(BlueprintCallable, Category = DetailCamera)
 	void SwitchToDetailView();
+	UFUNCTION(BlueprintCallable, Category = DetailCamera)
 	void SwitchToPlayView();
 	UPROPERTY() class ACameraActor* DetailViewCamera;
 

@@ -93,9 +93,9 @@ void APlayerCtrl::ConsumeTouchOff(const ETouchIndex::Type FingerIndex, const FVe
 	float distance = gestureVector.Size();
 	float velocity = distance / deltaTime;
 	
-	static uint64 id = 0;
-	GEngine->AddOnScreenDebugMessage(id++, 1/*sec*/, FColor::Green,
-		FString::Printf(TEXT("(%f %f) vel %f"), gestureVector.X, gestureVector.Y, velocity));
+	//static uint64 id = 0;
+	//GEngine->AddOnScreenDebugMessage(id++, 1/*sec*/, FColor::Green,
+	//	FString::Printf(TEXT("(%f %f) vel %f"), gestureVector.X, gestureVector.Y, velocity));
 
 	if (velocity < 100.f) {
 		MovePuckBasedOnScreenSpace(gestureEndPoint);
