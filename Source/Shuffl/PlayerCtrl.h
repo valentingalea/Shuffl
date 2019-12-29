@@ -38,6 +38,7 @@ private:
 	UPROPERTY() class ACameraActor* DetailViewCamera;
 
 	void MovePuckBasedOnScreenSpace(FVector2D);
+	UFUNCTION(BlueprintCallable, Category = Throwing)
 	void SetupNewThrow();
 	FVector StartingPoint, StartingLine;
 	float ThrowStartTime;
