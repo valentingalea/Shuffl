@@ -11,14 +11,12 @@
 #include "GameFramework/PlayerState.h"
 #include "DrawDebugHelpers.h"
 #include "Math/UnrealMathUtility.h"
+#include "Blueprint/UserWidget.h"
 
 #include "GameSubSys.h"
 
 APlayerCtrl::APlayerCtrl()
 {
-	//TODO: extract this outside (.ini for ex)
-	static ConstructorHelpers::FClassFinder<APawn> pawn(TEXT("/Game/BPC_Pawn"));
-	PawnClass = pawn.Class;
 }
 
 void APlayerCtrl::BeginPlay()
@@ -48,14 +46,18 @@ void APlayerCtrl::BeginPlay()
 		StartingLine = FVector(0, 51.f, 0); //TODO: find a way to data drive this
 		StartingPoint = (*iter)->GetActorLocation() - StartingLine / 2.f;
 	}
+	{
+		ensure(HUDClass);
+		auto widget = CreateWidget<UUserWidget>(this, HUDClass);
+		widget->AddToViewport();
+	}
 	
 	if (auto sys = UGameSubSys::Get(this)) {
-		sys->AwardPoints.BindLambda([ps = PlayerState](int points) {
+		sys->AwardPoints.BindLambda([ps = PlayerState, sys](int points) {
 			if (!ps) return;
 			ps->Score += points;
 
-			GEngine->AddOnScreenDebugMessage(-1, 1/*sec*/, FColor::Green,
-				FString::Printf(TEXT("Points: %i"), int(ps->Score)));
+			sys->ScoreChanged.Broadcast(ps->Score);
 		});
 	}
 

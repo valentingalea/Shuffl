@@ -14,10 +14,16 @@ class SHUFFL_API APlayerCtrl : public APlayerController
 public:
 	APlayerCtrl();
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Setup)
+	UClass* PawnClass;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Setup)
+	TSubclassOf<class UUserWidget> HUDClass;
+
+private:
 	virtual void BeginPlay() override;
 	virtual void SetupInputComponent() override;
 
-	UClass* PawnClass;
 	APuck* GetPuck();
 
 	void ConsumeTouchOn(const ETouchIndex::Type FingerIndex, const FVector Location);

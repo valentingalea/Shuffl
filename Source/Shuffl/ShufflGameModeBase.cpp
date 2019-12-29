@@ -10,5 +10,6 @@ AShufflGameModeBase::AShufflGameModeBase()
 {
 	DefaultPawnClass = nullptr; // the PC below will handle this
 
-	PlayerControllerClass = APlayerCtrl::StaticClass();
+	static ConstructorHelpers::FClassFinder<APlayerCtrl> PC(TEXT("/Game/BPC_PlayerCtrl"));
+	PlayerControllerClass = PC.Class;
 }
