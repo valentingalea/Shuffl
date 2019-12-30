@@ -7,6 +7,7 @@ public class ShufflEditorTarget : TargetRules
 {
 	public ShufflEditorTarget( TargetInfo Target) : base(Target)
 	{
+		DefaultBuildSettings = BuildSettingsVersion.V2;
 		Type = TargetType.Editor;
 
 		ExtraModuleNames.AddRange( new string[] { "Shuffl" } );

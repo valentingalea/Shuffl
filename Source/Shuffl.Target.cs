@@ -7,6 +7,7 @@ public class ShufflTarget : TargetRules
 {
 	public ShufflTarget( TargetInfo Target) : base(Target)
 	{
+		DefaultBuildSettings = BuildSettingsVersion.V2;
 		Type = TargetType.Game;
 
 		ExtraModuleNames.AddRange( new string[] { "Shuffl" } );
