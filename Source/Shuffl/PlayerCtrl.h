@@ -18,6 +18,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework\Actor.h"
 #include "GameFramework\PlayerController.h"
+#include "GameFramework\HUD.h"
 
 #include "Puck.h"
 
@@ -36,6 +37,15 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = PlayerCtrl)
 	class ACameraActor* DetailViewCamera;
+};
+
+UCLASS()
+class ACustomHUD : public AHUD
+{
+	GENERATED_BODY()
+
+public:
+	virtual void DrawHUD() override;
 };
 
 UCLASS(hidecategories = (Actor, "Actor Tick", Input, Game, "Mouse Interface", "Cheat Manager", LOD, Cooking))
@@ -89,12 +99,15 @@ private:
 	APuck* GetPuck();
 
 	void ConsumeTouchOn(const ETouchIndex::Type FingerIndex, const FVector Location);
+	void ConsumeTouchRepeat(const ETouchIndex::Type FingerIndex, const FVector Location);
 	void ConsumeTouchOff(const ETouchIndex::Type FingerIndex, const FVector Location);
 	void OnQuit();
 
 	FVector StartingPoint;
 	float ThrowStartTime;
 	FVector2D ThrowStartPoint;
+public:
+	TArray<FVector2D> TouchHistory;
 };
 
 inline APuck* APlayerCtrl::GetPuck()

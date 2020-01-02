@@ -24,4 +24,6 @@ AShufflGameModeBase::AShufflGameModeBase()
 
 	static ConstructorHelpers::FClassFinder<APlayerCtrl> PC(TEXT("/Game/BPC_PlayerCtrl"));
 	PlayerControllerClass = PC.Class;
+
+	HUDClass = ACustomHUD::StaticClass();
 }
