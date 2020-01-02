@@ -90,6 +90,7 @@ private:
 
 	void ConsumeTouchOn(const ETouchIndex::Type FingerIndex, const FVector Location);
 	void ConsumeTouchOff(const ETouchIndex::Type FingerIndex, const FVector Location);
+	void OnQuit();
 
 	FVector StartingPoint;
 	float ThrowStartTime;

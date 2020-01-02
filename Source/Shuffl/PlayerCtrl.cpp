@@ -73,6 +73,8 @@ void APlayerCtrl::SetupInputComponent()
 {
 	Super::SetupInputComponent();
 
+	InputComponent->BindAction("Quit", IE_Released, this, &APlayerCtrl::OnQuit);
+
 	constexpr auto dv = "DetailView";
 	InputComponent->BindAction(dv, IE_Pressed, this, &APlayerCtrl::SwitchToDetailView);
 	InputComponent->BindAction(dv, IE_Released, this, &APlayerCtrl::SwitchToPlayView);
@@ -81,6 +83,11 @@ void APlayerCtrl::SetupInputComponent()
 
 	InputComponent->BindTouch(EInputEvent::IE_Pressed, this, &APlayerCtrl::ConsumeTouchOn);
 	InputComponent->BindTouch(EInputEvent::IE_Released, this, &APlayerCtrl::ConsumeTouchOff);
+}
+
+void APlayerCtrl::OnQuit()
+{
+	FPlatformMisc::RequestExit(false);
 }
 
 void APlayerCtrl::ConsumeTouchOn(const ETouchIndex::Type FingerIndex, const FVector Location)
