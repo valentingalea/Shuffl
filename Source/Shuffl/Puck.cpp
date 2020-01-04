@@ -50,10 +50,6 @@ APuck::APuck()
 
 	MainCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	MainCamera->SetupAttachment(TheSpringArm, USpringArmComponent::SocketName);
-	MainCamera->bUsePawnControlRotation = false; // We don't want the controller rotating the camera
-	if (UGameplayStatics::GetPlatformName() == TEXT("Android")) {
-		MainCamera->SetFieldOfView(45.f); //HACK: due to aspect ration on my Galaxy S9
-	}
 
 	// Docs quote: "Determines which PlayerController, if any, should automatically possess the pawn
 	// when the level starts or when the pawn is spawned"

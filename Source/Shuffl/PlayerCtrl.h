@@ -61,7 +61,7 @@ public:
 	TSubclassOf<class UUserWidget> HUDClass;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Throwing)
-	FVector StartingLine = FVector(0, 51.f, 0);
+	FVector StartingLine = FVector(0, 51.f/*cm*/, 0);
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Throwing)
 	float EscapeVelocity = 100.f;

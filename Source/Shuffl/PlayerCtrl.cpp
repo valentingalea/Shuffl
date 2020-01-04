@@ -26,7 +26,7 @@
 #include "Blueprint/UserWidget.h"
 
 #include "GameSubSys.h"
-#define DEBUG_DRAW_TOUCH
+//#define DEBUG_DRAW_TOUCH
 
 ASceneProps::ASceneProps()
 {
@@ -116,7 +116,7 @@ void APlayerCtrl::ConsumeTouchOff(const ETouchIndex::Type FingerIndex, const FVe
 	
 	static uint64 id = 0;
 	GEngine->AddOnScreenDebugMessage(id++, 1/*sec*/, FColor::Green,
-		FString::Printf(TEXT("(%f %f) vel %f"), gestureVector.X, gestureVector.Y, velocity));
+		FString::Printf(TEXT("Force %f"), velocity / ThrowForceScaling));
 
 	if (velocity < EscapeVelocity) {
 		MovePuckBasedOnScreenSpace(gestureEndPoint);
