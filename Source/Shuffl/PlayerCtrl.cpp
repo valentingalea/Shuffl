@@ -24,9 +24,14 @@
 #include "DrawDebugHelpers.h"
 #include "Math/UnrealMathUtility.h"
 #include "Blueprint/UserWidget.h"
+#include "LevelSequence/Public/LevelSequenceActor.h"
 
 #include "GameSubSys.h"
+
 //#define DEBUG_DRAW_TOUCH
+#define make_sure(cond) \
+	ensure(cond); \
+	if (!cond) return
 
 ASceneProps::ASceneProps()
 {
@@ -39,28 +44,31 @@ void APlayerCtrl::BeginPlay()
 	Super::BeginPlay();
 
 	// inviolable contracts
-	//TODO: do something more radical if these contract are violated
 	{
-		ensure(PawnClass);
+		make_sure(PawnClass);
 
-		ensure(HUDClass);
+		make_sure(HUDClass);
 		auto widget = CreateWidget<UUserWidget>(this, HUDClass);
 		widget->AddToViewport();
 	}
 
 	{
 		auto iter = TActorIterator<ASceneProps>(GetWorld());
-		ensure(*iter);
+		make_sure(*iter);
 		SceneProps = *iter;
-		ensure(SceneProps->DetailViewCamera);
-		ensure(SceneProps->StartingPoint);
+		make_sure(SceneProps->DetailViewCamera);
+		make_sure(SceneProps->StartingPoint);
+		make_sure(SceneProps->Cinematic);
 
 		StartingPoint = (SceneProps->StartingPoint)->GetActorLocation() - StartingLine / 2.f;
+
+		SceneProps->Cinematic->SequencePlayer->Play();
+		SetViewTarget(SceneProps->DetailViewCamera);
 	}
 
 	if (auto sys = UGameSubSys::Get(this)) {
 		sys->AwardPoints.BindLambda([ps = PlayerState, sys](int points) {
-			if (!ps) return;
+			make_sure(ps);
 			ps->Score += points;
 
 			sys->ScoreChanged.Broadcast(ps->Score);
@@ -68,7 +76,7 @@ void APlayerCtrl::BeginPlay()
 	}
 
 	TouchHistory.Reserve(64);
-	SetupNewThrow();
+//	SetupNewThrow();
 }
 
 void APlayerCtrl::SetupInputComponent()
@@ -181,10 +189,7 @@ void APlayerCtrl::SetupNewThrow()
 {
 	const FVector location = StartingPoint + StartingLine / 2.f;
 	APuck *new_puck = static_cast<APuck *>(GetWorld()->SpawnActor(PawnClass, &location));
-	if (!new_puck) {
-		ensure(0);
-		return;
-	}
+	make_sure(new_puck);
 	
 	Possess(new_puck);
 }

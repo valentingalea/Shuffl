@@ -37,6 +37,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = PlayerCtrl)
 	class ACameraActor* DetailViewCamera;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = PlayerCtrl)
+	class ALevelSequenceActor* Cinematic;
 };
 
 UCLASS()
