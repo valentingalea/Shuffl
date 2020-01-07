@@ -21,8 +21,15 @@ public class Shuffl : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 	
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore" });
+		PublicDependencyModuleNames.AddRange(new string[] { 
+			"Core", "CoreUObject",
+			"Engine",
+			"InputCore" 
+		});
 
-		PrivateDependencyModuleNames.AddRange(new string[] { "UMG", "Slate", "SlateCore", "LevelSequence", "MovieScene" });
+		PrivateDependencyModuleNames.AddRange(new string[] {
+			"UMG", "Slate", "SlateCore",
+			"LevelSequence", "MovieScene"
+		});
 	}
 }
