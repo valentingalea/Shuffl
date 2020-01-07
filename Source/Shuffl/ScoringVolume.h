@@ -35,3 +35,11 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Scoring)
 	int PointsAwarded = 1;
 };
+
+UCLASS()
+class SHUFFL_API AKillingVolume : public ATriggerVolume
+{
+	GENERATED_BODY()
+
+public:
+};

@@ -38,6 +38,7 @@ public:
 
 	void ApplyForce(FVector2D);
 	void MoveTo(FVector);
+	FBox GetBoundingBox(); // will return just the puck component not the auxiliary elements
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Setup)
 	class UStaticMeshComponent* ThePuck;

@@ -40,6 +40,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = PlayerCtrl)
 	class ALevelSequenceActor* Cinematic;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = PlayerCtrl)
+	class AKillingVolume* KillingVolume;
 };
 
 UCLASS()
@@ -104,8 +107,6 @@ private:
 	virtual void BeginPlay() override;
 	virtual void SetupInputComponent() override;
 
-	TWeakObjectPtr<ASceneProps> SceneProps;
-
 	APuck* GetPuck();
 
 	void ConsumeTouchOn(const ETouchIndex::Type FingerIndex, const FVector Location);
@@ -113,11 +114,16 @@ private:
 	void ConsumeTouchOff(const ETouchIndex::Type FingerIndex, const FVector Location);
 	
 	void OnQuit();
+	void OnAwardPoints(int);
+	void OnPuckResting(APuck *);
+
+	TWeakObjectPtr<ASceneProps> SceneProps;
+
+	EPlayMode PlayMode;
 
 	FVector StartingPoint;
 	float ThrowStartTime;
 	FVector2D ThrowStartPoint;
-	EPlayMode PlayMode;
 public:
 	TArray<FVector2D> TouchHistory;
 };

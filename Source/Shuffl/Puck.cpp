@@ -74,6 +74,13 @@ void APuck::MoveTo(FVector location)
 	State = EPuckState::Setup;
 }
 
+FBox APuck::GetBoundingBox()
+{
+	FVector _min, _max;
+	ThePuck->GetLocalBounds(_min, _max);
+	return FBox(_min, _max).MoveTo(ThePuck->GetComponentLocation());
+}
+
 void APuck::Tick(float deltaTime)
 {
 	if (State != EPuckState::Traveling) return;

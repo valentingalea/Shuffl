@@ -27,6 +27,7 @@
 #include "LevelSequence/Public/LevelSequenceActor.h"
 
 #include "GameSubSys.h"
+#include "ScoringVolume.h"
 
 //#define DEBUG_DRAW_TOUCH
 #define make_sure(cond) \
@@ -59,6 +60,7 @@ void APlayerCtrl::BeginPlay()
 		make_sure(SceneProps->DetailViewCamera);
 		make_sure(SceneProps->StartingPoint);
 		make_sure(SceneProps->Cinematic);
+		make_sure(SceneProps->KillingVolume);
 
 		StartingPoint = (SceneProps->StartingPoint)->GetActorLocation() - StartingLine / 2.f;
 
@@ -66,18 +68,11 @@ void APlayerCtrl::BeginPlay()
 		SetViewTarget(SceneProps->DetailViewCamera);
 	}
 
-	//TODO: these should be extracted into members for better readability
-	if (auto sys = UGameSubSys::Get(this)) {
-		sys->AwardPoints.BindLambda([ps = PlayerState, sys](int points) {
-			make_sure(ps);
-			ps->Score += points;
-
-			sys->ScoreChanged.Broadcast(ps->Score);
-		});
-
-		sys->PuckResting.BindLambda([this](APuck* p) {
-			SetupNewThrow();
-		});
+	{
+		auto sys = UGameSubSys::Get(this);
+		make_sure(sys);
+		sys->AwardPoints.BindUObject(this, &APlayerCtrl::OnAwardPoints);
+		sys->PuckResting.BindUObject(this, &APlayerCtrl::OnPuckResting);
 	}
 
 	TouchHistory.Reserve(64);
@@ -104,6 +99,26 @@ void APlayerCtrl::SetupInputComponent()
 void APlayerCtrl::OnQuit()
 {
 	FPlatformMisc::RequestExit(false);
+}
+
+void APlayerCtrl::OnAwardPoints(int points)
+{
+	PlayerState->Score += points;
+
+	auto sys = UGameSubSys::Get(this);
+	sys->ScoreChanged.Broadcast(PlayerState->Score);
+}
+
+void APlayerCtrl::OnPuckResting(APuck *puck)
+{
+	SetupNewThrow();
+
+	make_sure(puck);
+	FBox killVol = SceneProps->KillingVolume->GetBounds().GetBox();
+	FBox puckVol = puck->GetBoundingBox();
+	if (killVol.Intersect(puckVol)) {
+		puck->Destroy();
+	}
 }
 
 void APlayerCtrl::ConsumeTouchOn(const ETouchIndex::Type FingerIndex, const FVector Location)
