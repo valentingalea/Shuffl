@@ -51,6 +51,13 @@ public:
 	virtual void DrawHUD() override;
 };
 
+enum class EPlayMode
+{
+	Setup,
+	Throw,
+	Observe
+};
+
 UCLASS(hidecategories = (Actor, "Actor Tick", Input, Game, "Mouse Interface", "Cheat Manager", LOD, Cooking))
 class SHUFFL_API APlayerCtrl : public APlayerController
 {
@@ -104,11 +111,13 @@ private:
 	void ConsumeTouchOn(const ETouchIndex::Type FingerIndex, const FVector Location);
 	void ConsumeTouchRepeat(const ETouchIndex::Type FingerIndex, const FVector Location);
 	void ConsumeTouchOff(const ETouchIndex::Type FingerIndex, const FVector Location);
+	
 	void OnQuit();
 
 	FVector StartingPoint;
 	float ThrowStartTime;
 	FVector2D ThrowStartPoint;
+	EPlayMode PlayMode;
 public:
 	TArray<FVector2D> TouchHistory;
 };

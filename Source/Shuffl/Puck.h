@@ -19,6 +19,13 @@
 #include "GameFramework/Pawn.h"
 #include "Puck.generated.h"
 
+enum class EPuckState
+{
+	Setup,
+	Traveling,
+	Resting
+};
+
 UCLASS()
 class SHUFFL_API APuck : public APawn
 {
@@ -26,6 +33,8 @@ class SHUFFL_API APuck : public APawn
 
 public:
 	APuck();
+
+	virtual void Tick(float DeltaTime) override;
 
 	void ApplyForce(FVector2D);
 	void MoveTo(FVector);
@@ -38,4 +47,12 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Setup)
 	class UCameraComponent* MainCamera;
+
+	/** Time in sec to allow for until puck is checked for rest (no velocity) */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Setup)
+	float ThresholdToResting = 3.f;
+
+private:
+	EPuckState State = EPuckState::Setup;
+	float Lifetime = 0.f; // since it started Traveling (in sec)
 };

@@ -66,6 +66,7 @@ void APlayerCtrl::BeginPlay()
 		SetViewTarget(SceneProps->DetailViewCamera);
 	}
 
+	//TODO: these should be extracted into members for better readability
 	if (auto sys = UGameSubSys::Get(this)) {
 		sys->AwardPoints.BindLambda([ps = PlayerState, sys](int points) {
 			make_sure(ps);
@@ -73,10 +74,14 @@ void APlayerCtrl::BeginPlay()
 
 			sys->ScoreChanged.Broadcast(ps->Score);
 		});
+
+		sys->PuckResting.BindLambda([this](APuck* p) {
+			SetupNewThrow();
+		});
 	}
 
 	TouchHistory.Reserve(64);
-//	SetupNewThrow();
+	PlayMode = EPlayMode::Setup;
 }
 
 void APlayerCtrl::SetupInputComponent()
@@ -103,6 +108,9 @@ void APlayerCtrl::OnQuit()
 
 void APlayerCtrl::ConsumeTouchOn(const ETouchIndex::Type FingerIndex, const FVector Location)
 {
+	if (PlayMode != EPlayMode::Setup) return;
+	PlayMode = EPlayMode::Throw;
+
 	ThrowStartTime = GetWorld()->GetRealTimeSeconds();
 	ThrowStartPoint = FVector2D(Location);
 	TouchHistory.Reset();
@@ -111,11 +119,15 @@ void APlayerCtrl::ConsumeTouchOn(const ETouchIndex::Type FingerIndex, const FVec
 
 void APlayerCtrl::ConsumeTouchRepeat(const ETouchIndex::Type FingerIndex, const FVector Location)
 {
+	if (PlayMode != EPlayMode::Throw) return;
+
 	TouchHistory.Add(FVector2D(Location));
 }
 
 void APlayerCtrl::ConsumeTouchOff(const ETouchIndex::Type FingerIndex, const FVector Location)
 {
+	if (PlayMode != EPlayMode::Throw) return;
+
 	float deltaTime = GetWorld()->GetRealTimeSeconds() - ThrowStartTime;
 	FVector2D gestureEndPoint = FVector2D(Location);
 	FVector2D gestureVector = gestureEndPoint - ThrowStartPoint;
@@ -128,6 +140,7 @@ void APlayerCtrl::ConsumeTouchOff(const ETouchIndex::Type FingerIndex, const FVe
 
 	if (velocity < EscapeVelocity) {
 		MovePuckBasedOnScreenSpace(gestureEndPoint);
+		PlayMode = EPlayMode::Setup;
 	} else { 
 		if (auto p = GetPuck()) {
 			gestureVector.Normalize();
@@ -141,6 +154,7 @@ void APlayerCtrl::ConsumeTouchOff(const ETouchIndex::Type FingerIndex, const FVe
 			DrawDebugDirectionalArrow(GetWorld(), p->GetActorLocation(),
 				p->GetActorLocation() + FVector(X, Y, 0), 3, FColor::Magenta, false, 5, 0, 1);
 #endif
+			PlayMode = EPlayMode::Observe;
 		}
 	}
 }
@@ -192,6 +206,7 @@ void APlayerCtrl::SetupNewThrow()
 	make_sure(new_puck);
 	
 	Possess(new_puck);
+	PlayMode = EPlayMode::Setup;
 }
 
 void APlayerCtrl::SwitchToDetailView()

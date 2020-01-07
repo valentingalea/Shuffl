@@ -22,6 +22,8 @@
 #include "Components/StaticMeshComponent.h"
 #include "Kismet/GameplayStatics.h"
 
+#include "GameSubSys.h"
+
 // Sets default values
 APuck::APuck()
 {
@@ -56,17 +58,33 @@ APuck::APuck()
 	// disable so the PC will spawn us, but this is a good shortcut for tests
 	AutoPossessPlayer = EAutoReceiveInput::Disabled;
 
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
 }
 
 void APuck::ApplyForce(FVector2D force)
 {
 	ThePuck->AddImpulse(FVector(force.X, force.Y, 0));
+	State = EPuckState::Traveling;
 }
 
 void APuck::MoveTo(FVector location)
 {
 	ThePuck->SetWorldLocationAndRotation(location, FRotator::ZeroRotator,
-		false/*sweep*/, nullptr/*hit result*/, ETeleportType::TeleportPhysics);
-	//NOTE: ResetPhysics causes problems
+		false/*sweep*/, nullptr/*hit result*/, ETeleportType::TeleportPhysics); //NOTE: ResetPhysics causes problems
+	State = EPuckState::Setup;
+}
+
+void APuck::Tick(float deltaTime)
+{
+	if (State != EPuckState::Traveling) return;
+
+	Lifetime += deltaTime;
+	FVector vel = ThePuck->GetPhysicsLinearVelocity();
+
+	if ((vel.SizeSquared() < .0001f) && Lifetime > ThresholdToResting) {
+		State = EPuckState::Resting;
+		if (auto sys = UGameSubSys::Get(this)) {
+			sys->PuckResting.ExecuteIfBound(this);
+		}
+	}
 }
