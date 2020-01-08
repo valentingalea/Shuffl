@@ -26,6 +26,13 @@ enum class EPuckState
 	Resting
 };
 
+UENUM(BlueprintType)
+enum class EPuckColor : uint8
+{
+	Red,
+	Blue
+};
+
 UCLASS()
 class SHUFFL_API APuck : public APawn
 {
@@ -34,11 +41,11 @@ class SHUFFL_API APuck : public APawn
 public:
 	APuck();
 
-	virtual void Tick(float DeltaTime) override;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Setup)
+	EPuckColor Color = EPuckColor::Red;
 
-	void ApplyForce(FVector2D);
-	void MoveTo(FVector);
-	FBox GetBoundingBox(); // will return just the puck component not the auxiliary elements
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = Setup)
+	UClass* PuckMeshClass;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Setup)
 	class UStaticMeshComponent* ThePuck;
@@ -50,10 +57,16 @@ public:
 	class UCameraComponent* MainCamera;
 
 	/** Time in sec to allow for until puck is checked for rest (no velocity) */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Setup)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Debug)
 	float ThresholdToResting = 3.f;
 
+	void ApplyForce(FVector2D);
+	void MoveTo(FVector);
+	FBox GetBoundingBox(); // will return just the puck component not the auxiliary elements
+
 private:
+	virtual void Tick(float DeltaTime) override;
+
 	EPuckState State = EPuckState::Setup;
 	float Lifetime = 0.f; // since it started Traveling (in sec)
 };

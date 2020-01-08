@@ -26,13 +26,11 @@
 #include "Blueprint/UserWidget.h"
 #include "LevelSequence/Public/LevelSequenceActor.h"
 
+#include "Shuffl.h"
 #include "GameSubSys.h"
 #include "ScoringVolume.h"
 
 //#define DEBUG_DRAW_TOUCH
-#define make_sure(cond) \
-	ensure(cond); \
-	if (!cond) return
 
 ASceneProps::ASceneProps()
 {
