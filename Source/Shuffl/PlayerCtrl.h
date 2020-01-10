@@ -73,15 +73,19 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Setup)
 	TSubclassOf<class UUserWidget> HUDClass;
 
+	/** axis of allowed puck placement */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Throwing)
 	FVector StartingLine = FVector(0, 51.f/*cm*/, 0);
 
+	/** pixels per sec */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Throwing)
 	float EscapeVelocity = 100.f;
 
+	/** divider for the flick force */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Throwing)
 	float ThrowForceScaling = 25.f;
 
+	/** upper limit for the puck throw force */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Throwing)
 	float ThrowForceMax = 150.f;
 

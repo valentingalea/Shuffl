@@ -109,6 +109,7 @@ void APlayerCtrl::OnAwardPoints(int points)
 
 void APlayerCtrl::OnPuckResting(APuck *puck)
 {
+	if (PlayMode == EPlayMode::Setup) return; // player restarted on their own
 	SetupNewThrow();
 
 	make_sure(puck);
@@ -146,10 +147,8 @@ void APlayerCtrl::ConsumeTouchOff(const ETouchIndex::Type FingerIndex, const FVe
 	FVector2D gestureVector = gestureEndPoint - ThrowStartPoint;
 	float distance = gestureVector.Size();
 	float velocity = distance / deltaTime;
-	
-	static uint64 id = 0;
-	GEngine->AddOnScreenDebugMessage(id++, 1/*sec*/, FColor::Green,
-		FString::Printf(TEXT("Force %f"), velocity / ThrowForceScaling));
+	// Galaxy S9: average ~2000 for short(normal) thumb flick
+	// Logitech G305: about same but can easily double
 
 	if (velocity < EscapeVelocity) {
 		MovePuckBasedOnScreenSpace(gestureEndPoint);
@@ -167,6 +166,10 @@ void APlayerCtrl::ConsumeTouchOff(const ETouchIndex::Type FingerIndex, const FVe
 			DrawDebugDirectionalArrow(GetWorld(), p->GetActorLocation(),
 				p->GetActorLocation() + FVector(X, Y, 0), 3, FColor::Magenta, false, 5, 0, 1);
 #endif
+			static uint64 id = 0;
+			GEngine->AddOnScreenDebugMessage(id++, 3/*sec*/, FColor::Green,
+				FString::Printf(TEXT("Vel %4.2f px/sec -- (%3.1f, %3.1f)"), velocity, X, Y));
+
 			PlayMode = EPlayMode::Observe;
 		}
 	}

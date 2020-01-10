@@ -70,6 +70,7 @@ APuck::APuck()
 void APuck::ApplyForce(FVector2D force)
 {
 	ThePuck->AddImpulse(FVector(force.X, force.Y, 0));
+	ThePuck->AddAngularImpulse(FVector(0, 0, force.Y));
 	State = EPuckState::Traveling;
 }
 
