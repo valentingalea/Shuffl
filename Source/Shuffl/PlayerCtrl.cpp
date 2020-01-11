@@ -175,6 +175,8 @@ void APlayerCtrl::ConsumeTouchRepeat(const ETouchIndex::Type FingerIndex, const 
 
 void APlayerCtrl::ConsumeTouchOff(const ETouchIndex::Type FingerIndex, const FVector Location)
 {
+	if (FingerIndex != ETouchIndex::Touch1) return;
+
 	if (PlayMode == EPlayMode::Spin) {
 		SpinAmount = (FVector2D(Location) - SpinStartPoint).Y;
 		ExitSpinMode();
