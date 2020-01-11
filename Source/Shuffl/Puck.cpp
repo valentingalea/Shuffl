@@ -60,24 +60,64 @@ APuck::APuck()
 	// disable so the PC will spawn us, but this is a good shortcut for tests
 	AutoPossessPlayer = EAutoReceiveInput::Disabled;
 
-	auto sys = UGameSubSys::Get(this);
-	make_sure(sys);
-	Color = sys->NextPuckColorGenerator++ % 2 ? EPuckColor::Red : EPuckColor::Blue;
+	if (auto sys = UGameSubSys::Get(this)) {
+		//TODO: better system
+		Color = sys->NextPuckColorGenerator++ % 2 ? EPuckColor::Red : EPuckColor::Blue;
+	}
 
 	PrimaryActorTick.bCanEverTick = true;
 }
 
-void APuck::ApplyForce(FVector2D force)
+void APuck::ApplyThrow(FVector2D force)
 {
+	Velocity = force;
 	ThePuck->AddImpulse(FVector(force.X, force.Y, 0));
-	ThePuck->AddAngularImpulse(FVector(0, 0, force.Y));
+	State = EPuckState::Traveling;
+}
+
+inline UStaticMeshComponent* FindCap(const char* name, AActor* parent)
+{
+	TInlineComponentArray<UStaticMeshComponent*> compList(parent);
+	for (auto* c : compList) {
+		if (c->GetName() == name) return c;
+	}
+	return nullptr;
+}
+
+void APuck::PreviewSpin(float spinAmount)
+{
+	auto name = Color == EPuckColor::Red ? "Puck_Cap_Red" : "Puck_Cap_Blue"; //TODO: better way of identify
+	auto mesh = FindCap(name, this);
+	mesh->SetRelativeRotation(FRotator(0, spinAmount, 0));
+	//TODO: doesn't work reliably
+}
+
+static float NormalArmLength;
+
+void APuck::OnEnterSpin()
+{
+	NormalArmLength = TheSpringArm->TargetArmLength;
+	TheSpringArm->TargetArmLength = SpringArmLenghtOnZoom;
+	TheSpringArm->bEnableCameraLag = false;
+}
+
+void APuck::OnExitSpin()
+{
+	TheSpringArm->TargetArmLength = NormalArmLength;
+	TheSpringArm->bEnableCameraLag = true;
+}
+
+void APuck::ApplySpin(float spinAmount)
+{
+	Velocity.Y = spinAmount; // X should have been set elsewhere
 	State = EPuckState::Traveling;
 }
 
 void APuck::MoveTo(FVector location)
 {
 	ThePuck->SetWorldLocationAndRotation(location, FRotator::ZeroRotator,
-		false/*sweep*/, nullptr/*hit result*/, ETeleportType::TeleportPhysics); //NOTE: ResetPhysics causes problems
+		false/*sweep*/, nullptr/*hit result*/,
+		ETeleportType::TeleportPhysics); //NOTE: ResetPhysics causes problems
 	State = EPuckState::Setup;
 }
 
@@ -94,6 +134,11 @@ void APuck::Tick(float deltaTime)
 
 	Lifetime += deltaTime;
 	FVector vel = ThePuck->GetPhysicsLinearVelocity();
+
+	if (ThrowMode == EThrowMode::ThrowAndSpin) {
+		ThePuck->AddForce(FVector(0, Velocity.Y, 0));
+		//TODO: find a way for the condition bellow to make sense 
+	}
 
 	if ((vel.SizeSquared() < .0001f) && Lifetime > ThresholdToResting) {
 		State = EPuckState::Resting;

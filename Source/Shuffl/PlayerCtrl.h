@@ -58,6 +58,7 @@ enum class EPlayMode
 {
 	Setup,
 	Throw,
+	Spin,
 	Observe
 };
 
@@ -77,29 +78,31 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Throwing)
 	FVector StartingLine = FVector(0, 51.f/*cm*/, 0);
 
-	/** pixels per sec */
+	/**
+	 * pixels per sec
+	 * Galaxy S9 screen: average ~2000 for short(normal) thumb flick
+	 * Logitech G305 mouse: about same but can easily double
+	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Throwing)
 	float EscapeVelocity = 100.f;
 
-	/** divider for the flick force */
+	/** divider for the flick velocity */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Throwing)
 	float ThrowForceScaling = 25.f;
 
-	/** upper limit for the puck throw force */
+	/** upper limit for the puck throw velocity after scaling has been applied */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Throwing)
 	float ThrowForceMax = 150.f;
 
-	UFUNCTION(BlueprintCallable, Category = Throwing)
-	void MovePuckBasedOnScreenSpace(FVector2D Location);
+	/** seconds */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Spin)
+	float SpinTime = 3.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Spin)
+	float SpinSlowMoFactor = .1f;
 
 	UFUNCTION(BlueprintCallable, Category = Throwing)
 	void SetupNewThrow();
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Cameras)
-	float DetailViewCameraSwitchSpeed = .5f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Cameras)
-	float MainCameraSwitchSpeed = .25f;
 
 	UFUNCTION(BlueprintCallable, Category = Cameras)
 	void SwitchToDetailView();
@@ -121,6 +124,11 @@ private:
 	void OnAwardPoints(int);
 	void OnPuckResting(APuck *);
 
+	void MovePuckOnTouchPosition(FVector2D);
+	void ThrowPuck(FVector2D, float);
+	void EnterSpinMode();
+	void ExitSpinMode();
+
 	TWeakObjectPtr<ASceneProps> SceneProps;
 
 	EPlayMode PlayMode;
@@ -128,7 +136,10 @@ private:
 	FVector StartingPoint;
 	float ThrowStartTime;
 	FVector2D ThrowStartPoint;
-public:
+	FVector2D SpinStartPoint;
+	float SpinAmount;
+	FTimerHandle SpinTimer;
+public: //TODO: needed for HUD access, encapsulate better
 	TArray<FVector2D> TouchHistory;
 };
 

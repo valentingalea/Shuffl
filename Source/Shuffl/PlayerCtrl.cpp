@@ -110,18 +110,37 @@ void APlayerCtrl::OnAwardPoints(int points)
 void APlayerCtrl::OnPuckResting(APuck *puck)
 {
 	if (PlayMode == EPlayMode::Setup) return; // player restarted on their own
-	SetupNewThrow();
-
 	make_sure(puck);
+
 	FBox killVol = SceneProps->KillingVolume->GetBounds().GetBox();
 	FBox puckVol = puck->GetBoundingBox();
 	if (killVol.Intersect(puckVol)) {
 		puck->Destroy();
 	}
+
+	SetupNewThrow();
+}
+
+void APlayerCtrl::SetupNewThrow()
+{
+	if (PlayMode == EPlayMode::Spin) return;
+
+	const FVector location = StartingPoint + StartingLine / 2.f;
+	APuck* new_puck = static_cast<APuck*>(GetWorld()->SpawnActor(PawnClass, &location));
+	make_sure(new_puck);
+
+	Possess(new_puck);
+	PlayMode = EPlayMode::Setup;
+	GetPuck()->ThrowMode = EThrowMode::ThrowAndSpin; //TODO: detect this not hardcode
 }
 
 void APlayerCtrl::ConsumeTouchOn(const ETouchIndex::Type FingerIndex, const FVector Location)
 {
+	if (PlayMode == EPlayMode::Spin) {
+		SpinStartPoint = FVector2D(Location);
+		return;
+	}
+
 	if (PlayMode != EPlayMode::Setup) return;
 	PlayMode = EPlayMode::Throw;
 
@@ -133,13 +152,23 @@ void APlayerCtrl::ConsumeTouchOn(const ETouchIndex::Type FingerIndex, const FVec
 
 void APlayerCtrl::ConsumeTouchRepeat(const ETouchIndex::Type FingerIndex, const FVector Location)
 {
-	if (PlayMode != EPlayMode::Throw) return;
+	if (PlayMode == EPlayMode::Spin) {
+		SpinAmount = (FVector2D(Location) - SpinStartPoint).Y;
+		GetPuck()->PreviewSpin(SpinAmount);
+		return;
+	}
 
+	if (PlayMode != EPlayMode::Throw) return;
 	TouchHistory.Add(FVector2D(Location));
 }
 
 void APlayerCtrl::ConsumeTouchOff(const ETouchIndex::Type FingerIndex, const FVector Location)
 {
+	if (PlayMode == EPlayMode::Spin) {
+		SpinAmount = (FVector2D(Location) - SpinStartPoint).Y;
+		ExitSpinMode();
+		return;
+	}
 	if (PlayMode != EPlayMode::Throw) return;
 
 	float deltaTime = GetWorld()->GetRealTimeSeconds() - ThrowStartTime;
@@ -147,51 +176,64 @@ void APlayerCtrl::ConsumeTouchOff(const ETouchIndex::Type FingerIndex, const FVe
 	FVector2D gestureVector = gestureEndPoint - ThrowStartPoint;
 	float distance = gestureVector.Size();
 	float velocity = distance / deltaTime;
-	// Galaxy S9: average ~2000 for short(normal) thumb flick
-	// Logitech G305: about same but can easily double
 
 	if (velocity < EscapeVelocity) {
-		MovePuckBasedOnScreenSpace(gestureEndPoint);
+		MovePuckOnTouchPosition(gestureEndPoint);
 		PlayMode = EPlayMode::Setup;
 	} else { 
-		if (auto p = GetPuck()) {
-			gestureVector.Normalize();
-			gestureVector *= velocity / ThrowForceScaling;
-
-			auto X = FMath::Clamp(FMath::Abs(gestureVector.Y), 0.f, ThrowForceMax);
-			auto Y = FMath::Clamp(gestureVector.X, -ThrowForceMax, ThrowForceMax);
-			p->ApplyForce(FVector2D(X, Y));
-
-#ifdef DEBUG_DRAW_TOUCH
-			DrawDebugDirectionalArrow(GetWorld(), p->GetActorLocation(),
-				p->GetActorLocation() + FVector(X, Y, 0), 3, FColor::Magenta, false, 5, 0, 1);
-#endif
-			static uint64 id = 0;
-			GEngine->AddOnScreenDebugMessage(id++, 3/*sec*/, FColor::Green,
-				FString::Printf(TEXT("Vel %4.2f px/sec -- (%3.1f, %3.1f)"), velocity, X, Y));
-
-			PlayMode = EPlayMode::Observe;
-		}
+		ThrowPuck(gestureVector, velocity);
+		PlayMode = EPlayMode::Throw;
 	}
 }
 
-void ACustomHUD::DrawHUD()
+void APlayerCtrl::ThrowPuck(FVector2D gestureVector, float velocity)
 {
-	Super::DrawHUD();
+	make_sure(GetPuck());
 
-#ifdef DEBUG_DRAW_TOUCH
-	const auto &pc = *static_cast<APlayerCtrl *>(this->GetOwningPlayerController());
-	for (int i = 0; i < pc.TouchHistory.Num() - 1; ++i) {
-		const FVector2D& a = pc.TouchHistory[i];
-		const FVector2D& b = pc.TouchHistory[i + 1];
-		constexpr float d = 3.f;
-		DrawRect(FColor::Yellow, a.X - d / 2, a.Y - d / 2, d, d);
-		DrawLine(a.X, a.Y, b.X, b.Y, FColor::Red);
+	gestureVector.Normalize();
+	gestureVector *= velocity / ThrowForceScaling;
+
+	auto X = FMath::Clamp(FMath::Abs(gestureVector.Y), 0.f, ThrowForceMax);
+	auto Y = FMath::Clamp(gestureVector.X, -ThrowForceMax, ThrowForceMax);
+	if (GetPuck()->ThrowMode == EThrowMode::ThrowAndSpin) {
+		Y = 0.f;
+		GetWorldTimerManager().SetTimer(SpinTimer, this, &APlayerCtrl::EnterSpinMode,
+			1.f / 60.f, false);
 	}
-#endif
+	GetPuck()->ApplyThrow(FVector2D(X, Y));
+
+	static uint64 id = 0;
+	GEngine->AddOnScreenDebugMessage(id++, 3/*sec*/, FColor::Green,
+		FString::Printf(TEXT("Vel %4.2f px/sec -- (%3.1f, %3.1f)"), velocity, X, Y));
 }
 
-void APlayerCtrl::MovePuckBasedOnScreenSpace(FVector2D ScreenSpaceLocation)
+void APlayerCtrl::EnterSpinMode()
+{
+	PlayMode = EPlayMode::Spin;
+
+	GetPuck()->OnEnterSpin();
+
+	GetWorldSettings()->SetTimeDilation(SpinSlowMoFactor);
+
+	GetWorldTimerManager().SetTimer(SpinTimer, this, &APlayerCtrl::ExitSpinMode,
+		SpinTime * SpinSlowMoFactor, false);
+}
+
+void APlayerCtrl::ExitSpinMode()
+{
+	if (PlayMode != EPlayMode::Spin) return; // can be triggered by timer or user, choose earliest
+	PlayMode = EPlayMode::Throw;
+
+	GetPuck()->OnExitSpin();
+	static uint64 id = 1000;
+	GEngine->AddOnScreenDebugMessage(id++, 3/*sec*/, FColor::Green,
+		FString::Printf(TEXT("spin %3.1f"), SpinAmount));
+	GetPuck()->ApplySpin(SpinAmount / ThrowForceScaling);
+
+	GetWorldSettings()->SetTimeDilation(1.f);
+}
+
+void APlayerCtrl::MovePuckOnTouchPosition(FVector2D ScreenSpaceLocation)
 {
 	FHitResult HitResult;
 	GetHitResultAtScreenPosition(ScreenSpaceLocation, ECC_Visibility,
@@ -215,23 +257,30 @@ void APlayerCtrl::MovePuckBasedOnScreenSpace(FVector2D ScreenSpaceLocation)
 	}
 }
 
-void APlayerCtrl::SetupNewThrow()
-{
-	const FVector location = StartingPoint + StartingLine / 2.f;
-	APuck *new_puck = static_cast<APuck *>(GetWorld()->SpawnActor(PawnClass, &location));
-	make_sure(new_puck);
-	
-	Possess(new_puck);
-	PlayMode = EPlayMode::Setup;
-}
-
 void APlayerCtrl::SwitchToDetailView()
 {
 	if (!SceneProps.IsValid()) return;
-	SetViewTargetWithBlend(SceneProps->DetailViewCamera, DetailViewCameraSwitchSpeed);
+	SetViewTargetWithBlend(SceneProps->DetailViewCamera, .5f);
 }
 
 void APlayerCtrl::SwitchToPlayView()
 {
-	SetViewTargetWithBlend(GetPuck(), MainCameraSwitchSpeed);
+	SetViewTargetWithBlend(GetPuck(), .25f);
+}
+
+//TODO: move elsewhere
+void ACustomHUD::DrawHUD()
+{
+	Super::DrawHUD();
+
+#ifdef DEBUG_DRAW_TOUCH
+	const auto& pc = *static_cast<APlayerCtrl*>(this->GetOwningPlayerController());
+	for (int i = 0; i < pc.TouchHistory.Num() - 1; ++i) {
+		const FVector2D& a = pc.TouchHistory[i];
+		const FVector2D& b = pc.TouchHistory[i + 1];
+		constexpr float d = 3.f;
+		DrawRect(FColor::Yellow, a.X - d / 2, a.Y - d / 2, d, d);
+		DrawLine(a.X, a.Y, b.X, b.Y, FColor::Red);
+	}
+#endif
 }

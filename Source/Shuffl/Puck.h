@@ -26,6 +26,12 @@ enum class EPuckState
 	Resting
 };
 
+enum class EThrowMode
+{
+	SimpleThrow,
+	ThrowAndSpin
+};
+
 UENUM(BlueprintType)
 enum class EPuckColor : uint8
 {
@@ -56,12 +62,25 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Setup)
 	class UCameraComponent* MainCamera;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Debug)
+	float SpringArmLenghtOnZoom = 15.f;
+
 	/** Time in sec to allow for until puck is checked for rest (no velocity) */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Debug)
 	float ThresholdToResting = 3.f;
 
-	void ApplyForce(FVector2D);
+	EThrowMode ThrowMode;
+
+	FVector2D Velocity;
+
+	void ApplyThrow(FVector2D);
 	void MoveTo(FVector);
+
+	void ApplySpin(float);
+	void PreviewSpin(float);
+	void OnEnterSpin();
+	void OnExitSpin();
+	
 	FBox GetBoundingBox(); // will return just the puck component not the auxiliary elements
 
 private:
