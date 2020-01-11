@@ -128,6 +128,7 @@ private:
 	void ThrowPuck(FVector2D, float);
 	void EnterSpinMode();
 	void ExitSpinMode();
+	float CalculateSpin(FVector); // returns diff number for preview
 
 	TWeakObjectPtr<ASceneProps> SceneProps;
 

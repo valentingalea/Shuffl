@@ -164,8 +164,8 @@ void APlayerCtrl::ConsumeTouchRepeat(const ETouchIndex::Type FingerIndex, const 
 	}
 
 	if (PlayMode == EPlayMode::Spin) {
-		SpinAmount = (FVector2D(Location) - SpinStartPoint).Y;
-		GetPuck()->PreviewSpin(SpinAmount);
+		float preview = CalculateSpin(Location);
+		GetPuck()->PreviewSpin(preview);
 		return;
 	}
 
@@ -178,7 +178,7 @@ void APlayerCtrl::ConsumeTouchOff(const ETouchIndex::Type FingerIndex, const FVe
 	if (FingerIndex != ETouchIndex::Touch1) return;
 
 	if (PlayMode == EPlayMode::Spin) {
-		SpinAmount = (FVector2D(Location) - SpinStartPoint).Y;
+		CalculateSpin(Location);
 		ExitSpinMode();
 		return;
 	}
@@ -221,12 +221,19 @@ void APlayerCtrl::ThrowPuck(FVector2D gestureVector, float velocity)
 		FString::Printf(TEXT("Vel %4.2f px/sec -- (%3.1f, %3.1f)"), velocity, X, Y));
 }
 
+float APlayerCtrl::CalculateSpin(FVector touchLocation)
+{
+	SpinAmount = (SpinStartPoint - FVector2D(touchLocation)).X / ThrowForceScaling;
+	auto preview = SpinAmount * 2.f;
+	SpinAmount /= ThrowForceScaling;
+	return preview;
+}
+
 void APlayerCtrl::EnterSpinMode()
 {
 	PlayMode = EPlayMode::Spin;
 
 	GetPuck()->OnEnterSpin();
-
 	GetWorldSettings()->SetTimeDilation(SpinSlowMoFactor);
 
 	GetWorldTimerManager().SetTimer(SpinTimer, this, &APlayerCtrl::ExitSpinMode,
@@ -239,12 +246,13 @@ void APlayerCtrl::ExitSpinMode()
 	PlayMode = EPlayMode::Observe;
 
 	GetPuck()->OnExitSpin();
+	GetPuck()->ApplySpin(SpinAmount);
+
+	GetWorldSettings()->SetTimeDilation(1.f);
+
 	static uint64 id = 1000;
 	GEngine->AddOnScreenDebugMessage(id++, 3/*sec*/, FColor::Green,
 		FString::Printf(TEXT("spin %3.1f"), SpinAmount));
-	GetPuck()->ApplySpin(SpinAmount / ThrowForceScaling);
-
-	GetWorldSettings()->SetTimeDilation(1.f);
 }
 
 void APlayerCtrl::MovePuckOnTouchPosition(FVector2D ScreenSpaceLocation)

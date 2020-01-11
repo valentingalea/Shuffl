@@ -89,7 +89,6 @@ void APuck::PreviewSpin(float spinAmount)
 	auto name = Color == EPuckColor::Red ? "Puck_Cap_Red" : "Puck_Cap_Blue"; //TODO: better way of identify
 	auto mesh = FindCap(name, this);
 	mesh->SetRelativeRotation(FRotator(0, spinAmount, 0));
-	//TODO: doesn't work reliably
 }
 
 static float NormalArmLength;
