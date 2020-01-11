@@ -69,10 +69,9 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Debug)
 	float ThresholdToResting = 3.f;
 
-	EThrowMode ThrowMode;
+	EThrowMode ThrowMode = EThrowMode::SimpleThrow;
 
-	FVector2D Velocity;
-
+	FVector2D Velocity = FVector2D::ZeroVector;
 	void ApplyThrow(FVector2D);
 	void MoveTo(FVector);
 

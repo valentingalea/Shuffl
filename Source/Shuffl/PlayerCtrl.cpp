@@ -131,11 +131,17 @@ void APlayerCtrl::SetupNewThrow()
 
 	Possess(new_puck);
 	PlayMode = EPlayMode::Setup;
-	GetPuck()->ThrowMode = EThrowMode::ThrowAndSpin; //TODO: detect this not hardcode
+	GetPuck()->ThrowMode = EThrowMode::SimpleThrow;
+	SpinAmount = 0.f;
 }
 
 void APlayerCtrl::ConsumeTouchOn(const ETouchIndex::Type FingerIndex, const FVector Location)
 {
+	if (FingerIndex != ETouchIndex::Touch1) {
+		GetPuck()->ThrowMode = EThrowMode::ThrowAndSpin;
+		return;
+	}
+
 	if (PlayMode == EPlayMode::Spin) {
 		SpinStartPoint = FVector2D(Location);
 		return;
@@ -152,6 +158,11 @@ void APlayerCtrl::ConsumeTouchOn(const ETouchIndex::Type FingerIndex, const FVec
 
 void APlayerCtrl::ConsumeTouchRepeat(const ETouchIndex::Type FingerIndex, const FVector Location)
 {
+	if (FingerIndex != ETouchIndex::Touch1) {
+		GetPuck()->ThrowMode = EThrowMode::ThrowAndSpin;
+		return;
+	}
+
 	if (PlayMode == EPlayMode::Spin) {
 		SpinAmount = (FVector2D(Location) - SpinStartPoint).Y;
 		GetPuck()->PreviewSpin(SpinAmount);
@@ -182,7 +193,8 @@ void APlayerCtrl::ConsumeTouchOff(const ETouchIndex::Type FingerIndex, const FVe
 		PlayMode = EPlayMode::Setup;
 	} else { 
 		ThrowPuck(gestureVector, velocity);
-		PlayMode = EPlayMode::Throw;
+		PlayMode = GetPuck()->ThrowMode == EThrowMode::SimpleThrow ?
+			EPlayMode::Observe : EPlayMode::Spin;
 	}
 }
 
@@ -222,7 +234,7 @@ void APlayerCtrl::EnterSpinMode()
 void APlayerCtrl::ExitSpinMode()
 {
 	if (PlayMode != EPlayMode::Spin) return; // can be triggered by timer or user, choose earliest
-	PlayMode = EPlayMode::Throw;
+	PlayMode = EPlayMode::Observe;
 
 	GetPuck()->OnExitSpin();
 	static uint64 id = 1000;
