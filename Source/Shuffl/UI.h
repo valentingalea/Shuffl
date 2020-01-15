@@ -16,13 +16,23 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/GameModeBase.h"
-#include "ShufflGameModeBase.generated.h"
+#include "GameFramework\HUD.h"
+#include "UI.generated.h"
+
+//
+// the main menu HUD is too simple so it's just in Blueprint
+// Content/MainMenu/BP_MainMenuHUD
+//
 
 UCLASS()
-class SHUFFL_API AShufflGameModeBase : public AGameModeBase
+class ABoardPlayHUD : public AHUD
 {
 	GENERATED_BODY()
 
-	AShufflGameModeBase();
+public:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Setup)
+	TSubclassOf<class UUserWidget> HUDClass;
+	
+	virtual void BeginPlay() override;
+	virtual void DrawHUD() override;
 };

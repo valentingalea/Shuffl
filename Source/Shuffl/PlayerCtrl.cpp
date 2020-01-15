@@ -23,7 +23,6 @@
 #include "GameFramework/PlayerState.h"
 #include "DrawDebugHelpers.h"
 #include "Math/UnrealMathUtility.h"
-#include "Blueprint/UserWidget.h"
 #include "LevelSequence/Public/LevelSequenceActor.h"
 
 #include "Shuffl.h"
@@ -42,13 +41,9 @@ void APlayerCtrl::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// inviolable contracts
+// inviolable contracts
 	{
 		make_sure(PawnClass);
-
-		make_sure(HUDClass);
-		auto widget = CreateWidget<UUserWidget>(this, HUDClass);
-		widget->AddToViewport();
 	}
 
 	{
@@ -57,13 +52,9 @@ void APlayerCtrl::BeginPlay()
 		SceneProps = *iter;
 		make_sure(SceneProps->DetailViewCamera);
 		make_sure(SceneProps->StartingPoint);
-		make_sure(SceneProps->Cinematic);
 		make_sure(SceneProps->KillingVolume);
 
 		StartingPoint = (SceneProps->StartingPoint)->GetActorLocation() - StartingLine / 2.f;
-
-		SceneProps->Cinematic->SequencePlayer->Play();
-		SetViewTarget(SceneProps->DetailViewCamera);
 	}
 
 	{
@@ -75,6 +66,7 @@ void APlayerCtrl::BeginPlay()
 
 	TouchHistory.Reserve(64);
 	PlayMode = EPlayMode::Setup;
+	SetupNewThrow();
 }
 
 void APlayerCtrl::SetupInputComponent()
@@ -225,7 +217,7 @@ float APlayerCtrl::CalculateSpin(FVector touchLocation)
 {
 	SpinAmount = (SpinStartPoint - FVector2D(touchLocation)).X / ThrowForceScaling;
 	auto preview = SpinAmount * 2.f;
-	SpinAmount /= ThrowForceScaling;
+	//SpinAmount /= ThrowForceScaling;
 	return preview;
 }
 
@@ -288,21 +280,4 @@ void APlayerCtrl::SwitchToDetailView()
 void APlayerCtrl::SwitchToPlayView()
 {
 	SetViewTargetWithBlend(GetPuck(), .25f);
-}
-
-//TODO: move elsewhere
-void ACustomHUD::DrawHUD()
-{
-	Super::DrawHUD();
-
-#ifdef DEBUG_DRAW_TOUCH
-	const auto& pc = *static_cast<APlayerCtrl*>(this->GetOwningPlayerController());
-	for (int i = 0; i < pc.TouchHistory.Num() - 1; ++i) {
-		const FVector2D& a = pc.TouchHistory[i];
-		const FVector2D& b = pc.TouchHistory[i + 1];
-		constexpr float d = 3.f;
-		DrawRect(FColor::Yellow, a.X - d / 2, a.Y - d / 2, d, d);
-		DrawLine(a.X, a.Y, b.X, b.Y, FColor::Red);
-	}
-#endif
 }

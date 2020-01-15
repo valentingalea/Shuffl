@@ -18,7 +18,6 @@
 #include "CoreMinimal.h"
 #include "GameFramework\Actor.h"
 #include "GameFramework\PlayerController.h"
-#include "GameFramework\HUD.h"
 
 #include "Puck.h"
 
@@ -39,19 +38,7 @@ public:
 	class ACameraActor* DetailViewCamera;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = PlayerCtrl)
-	class ALevelSequenceActor* Cinematic;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = PlayerCtrl)
 	class AKillingVolume* KillingVolume;
-};
-
-UCLASS()
-class ACustomHUD : public AHUD
-{
-	GENERATED_BODY()
-
-public:
-	virtual void DrawHUD() override;
 };
 
 enum class EPlayMode
@@ -70,9 +57,6 @@ class SHUFFL_API APlayerCtrl : public APlayerController
 public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Setup)
 	UClass* PawnClass;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Setup)
-	TSubclassOf<class UUserWidget> HUDClass;
 
 	/** axis of allowed puck placement */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Throwing)
