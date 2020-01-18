@@ -17,6 +17,9 @@
 
 #include "CoreMinimal.h"
 #include "Engine\Public\Subsystems\GameInstanceSubsystem.h"
+
+#include "Def.h"
+
 #include "GameSubSys.generated.h"
 
 // only handled in C++
@@ -25,6 +28,7 @@ DECLARE_DELEGATE_OneParam(FEvent_PuckResting, class APuck *);
 
 // handled in C++/Blueprint
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FEvent_ScoreChanged, int, NewScoreValue);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FEvent_PlayersChangeTurn, EPuckColor, NewColor);
 
 UCLASS()
 class UGameSubSys : public UGameInstanceSubsystem
@@ -38,8 +42,12 @@ public:
 	static UGameSubSys* Get(const UObject* ContextObject);
 
 	FEvent_AwardPoints AwardPoints;
+
 	FEvent_PuckResting PuckResting;
 
-	UPROPERTY(BlueprintAssignable, Category = ScoringEvents)
+	UPROPERTY(BlueprintAssignable)
 	FEvent_ScoreChanged ScoreChanged;
+
+	UPROPERTY(BlueprintAssignable)
+	FEvent_PlayersChangeTurn PlayersChangeTurn;
 };

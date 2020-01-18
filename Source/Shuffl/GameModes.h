@@ -32,6 +32,7 @@ class SHUFFL_API ACommonGameState : public AGameState
 	GENERATED_BODY()
 
 public:
+	bool FirstTurn = true;
 	EGameTurn InPlayTurn;
 	EPuckColor InPlayPuckColor;
 
@@ -45,7 +46,7 @@ class SHUFFL_API APracticeGameState : public ACommonGameState
 	GENERATED_BODY()
 
 public:
-	virtual void BeginPlay() override;
+	virtual void NextTurn() override;
 };
 
 UCLASS()
@@ -54,6 +55,5 @@ class SHUFFL_API A2PlayersGameState : public ACommonGameState
 	GENERATED_BODY()
 
 public:
-	virtual void BeginPlay() override;
 	virtual void NextTurn() override;
 };

@@ -114,15 +114,14 @@ void APlayerCtrl::SetupNewThrow()
 
 	auto* gameState = Cast<ACommonGameState>(GetWorld()->GetGameState());
 	make_sure(gameState);
+	//TODO: needs to be RPC to GameMode
+	gameState->NextTurn();
 
 	Possess(new_puck);
 	PlayMode = EPlayerCtrlMode::Setup;
 	GetPuck()->SetColor(gameState->InPlayPuckColor);
 	GetPuck()->ThrowMode = EPuckThrowMode::Simple;
 	SpinAmount = 0.f;
-
-	//TODO: needs to be RPC to GameMode
-	gameState->NextTurn();
 }
 
 void APlayerCtrl::ConsumeTouchOn(const ETouchIndex::Type FingerIndex, const FVector Location)

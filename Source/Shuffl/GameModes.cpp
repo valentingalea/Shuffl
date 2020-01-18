@@ -17,6 +17,8 @@
 
 #include "Math/UnrealMathUtility.h"
 
+#include "GameSubSys.h"
+
 //#include "Net/UnrealNetwork.h"
 //
 //void AShuffGameState::BeginPlay()
@@ -35,24 +37,23 @@
 //	DOREPLIFETIME(AShuffGameState, GameType);
 //}
 
-void APracticeGameState::BeginPlay()
+void APracticeGameState::NextTurn()
 {
-	Super::BeginPlay();
-
 	InPlayTurn = EGameTurn::Player1;
 	InPlayPuckColor = EPuckColor::Red;
 }
 
-void A2PlayersGameState::BeginPlay()
-{
-	Super::BeginPlay();
-
-	InPlayPuckColor = FMath::RandBool() ? EPuckColor::Red : EPuckColor::Blue;
-	InPlayTurn = InPlayPuckColor == EPuckColor::Red ? EGameTurn::Player1 : EGameTurn::Player2;
-}
-
 void A2PlayersGameState::NextTurn()
 {
-	InPlayPuckColor = InPlayPuckColor == EPuckColor::Blue ? EPuckColor::Red : EPuckColor::Blue;
+	if (FirstTurn) {
+		InPlayPuckColor = FMath::RandBool() ? EPuckColor::Red : EPuckColor::Blue;
+		FirstTurn = false;
+	} else {
+		InPlayPuckColor = InPlayPuckColor == EPuckColor::Blue ? EPuckColor::Red : EPuckColor::Blue;
+	}
 	InPlayTurn = InPlayPuckColor == EPuckColor::Red ? EGameTurn::Player1 : EGameTurn::Player2;
+
+	if (auto* sys = UGameSubSys::Get(this)) {
+		sys->PlayersChangeTurn.Broadcast(InPlayPuckColor);
+	}
 }
