@@ -60,7 +60,6 @@ void APlayerCtrl::BeginPlay()
 	{
 		auto sys = UGameSubSys::Get(this);
 		make_sure(sys);
-		sys->AwardPoints.BindUObject(this, &APlayerCtrl::OnAwardPoints);
 		sys->PuckResting.BindUObject(this, &APlayerCtrl::OnPuckResting);
 	}
 
@@ -89,14 +88,6 @@ void APlayerCtrl::SetupInputComponent()
 void APlayerCtrl::OnQuit()
 {
 	FPlatformMisc::RequestExit(false);
-}
-
-void APlayerCtrl::OnAwardPoints(int points)
-{
-	PlayerState->Score += points;
-
-	auto sys = UGameSubSys::Get(this);
-	sys->ScoreChanged.Broadcast(PlayerState->Score);
 }
 
 void APlayerCtrl::OnPuckResting(APuck *puck)
@@ -280,4 +271,9 @@ void APlayerCtrl::SwitchToDetailView()
 void APlayerCtrl::SwitchToPlayView()
 {
 	SetViewTargetWithBlend(GetPuck(), .25f);
+}
+
+EGameTypes APlayerCtrl::GetGameType()
+{
+	return GetWorld()->GetGameState<AShuffGameState>()->GameType;
 }

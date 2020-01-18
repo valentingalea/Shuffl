@@ -20,6 +20,7 @@
 #include "GameFramework\PlayerController.h"
 
 #include "Puck.h"
+#include "GameModes.h"
 
 #include "PlayerCtrl.generated.h"
 
@@ -85,13 +86,16 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Spin)
 	float SpinSlowMoFactor = .1f;
 
-	UFUNCTION(BlueprintCallable, Category = Throwing)
+	UFUNCTION(BlueprintCallable)
+	EGameTypes GetGameType();
+
+	UFUNCTION(BlueprintCallable)
 	void SetupNewThrow();
 
-	UFUNCTION(BlueprintCallable, Category = Cameras)
+	UFUNCTION(BlueprintCallable)
 	void SwitchToDetailView();
 
-	UFUNCTION(BlueprintCallable, Category = Cameras)
+	UFUNCTION(BlueprintCallable)
 	void SwitchToPlayView();
 
 private:
@@ -105,7 +109,6 @@ private:
 	void ConsumeTouchOff(const ETouchIndex::Type FingerIndex, const FVector Location);
 	
 	void OnQuit();
-	void OnAwardPoints(int);
 	void OnPuckResting(APuck *);
 
 	void MovePuckOnTouchPosition(FVector2D);
@@ -116,13 +119,13 @@ private:
 
 	TWeakObjectPtr<ASceneProps> SceneProps;
 
-	EPlayMode PlayMode;
+	EPlayMode PlayMode = EPlayMode::Setup;
 
-	FVector StartingPoint;
-	float ThrowStartTime;
-	FVector2D ThrowStartPoint;
-	FVector2D SpinStartPoint;
-	float SpinAmount;
+	FVector StartingPoint = FVector::ZeroVector;
+	float ThrowStartTime = 0.f;
+	FVector2D ThrowStartPoint = FVector2D::ZeroVector;
+	FVector2D SpinStartPoint = FVector2D::ZeroVector;
+	float SpinAmount = 0.f;
 	FTimerHandle SpinTimer;
 public: //TODO: needed for HUD access, encapsulate better
 	TArray<FVector2D> TouchHistory;
