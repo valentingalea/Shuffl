@@ -42,14 +42,6 @@ public:
 	class AKillingVolume* KillingVolume;
 };
 
-enum class EPlayMode
-{
-	Setup,
-	Throw,
-	Spin,
-	Observe
-};
-
 UCLASS(hidecategories = (Actor, "Actor Tick", Input, Game, "Mouse Interface", "Cheat Manager", LOD, Cooking))
 class SHUFFL_API APlayerCtrl : public APlayerController
 {
@@ -87,9 +79,6 @@ public:
 	float SpinSlowMoFactor = .1f;
 
 	UFUNCTION(BlueprintCallable)
-	EGameTypes GetGameType();
-
-	UFUNCTION(BlueprintCallable)
 	void SetupNewThrow();
 
 	UFUNCTION(BlueprintCallable)
@@ -119,7 +108,7 @@ private:
 
 	TWeakObjectPtr<ASceneProps> SceneProps;
 
-	EPlayMode PlayMode = EPlayMode::Setup;
+	EPlayerCtrlMode PlayMode = EPlayerCtrlMode::Setup;
 
 	FVector StartingPoint = FVector::ZeroVector;
 	float ThrowStartTime = 0.f;

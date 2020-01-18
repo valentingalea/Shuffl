@@ -134,7 +134,7 @@ void APuck::Tick(float deltaTime)
 	Lifetime += deltaTime;
 	FVector vel = ThePuck->GetPhysicsLinearVelocity();
 
-	if (ThrowMode == EThrowMode::ThrowAndSpin) {
+	if (ThrowMode == EPuckThrowMode::WithSpin) {
 		ThePuck->AddForce(FVector(0, Velocity.Y, 0));
 		//TODO: find a way for the condition bellow to make sense 
 	}

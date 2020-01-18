@@ -17,27 +17,10 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Pawn.h"
+
+#include "Def.h"
+
 #include "Puck.generated.h"
-
-enum class EPuckState
-{
-	Setup,
-	Traveling,
-	Resting
-};
-
-enum class EThrowMode
-{
-	SimpleThrow,
-	ThrowAndSpin
-};
-
-UENUM(BlueprintType)
-enum class EPuckColor : uint8
-{
-	Red,
-	Blue
-};
 
 UCLASS()
 class SHUFFL_API APuck : public APawn
@@ -69,7 +52,7 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Debug)
 	float ThresholdToResting = 3.f;
 
-	EThrowMode ThrowMode = EThrowMode::SimpleThrow;
+	EPuckThrowMode ThrowMode = EPuckThrowMode::Simple;
 
 	FVector2D Velocity = FVector2D::ZeroVector;
 	void ApplyThrow(FVector2D);

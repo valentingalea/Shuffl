@@ -64,7 +64,7 @@ void APlayerCtrl::BeginPlay()
 	}
 
 	TouchHistory.Reserve(64);
-	PlayMode = EPlayMode::Setup;
+	PlayMode = EPlayerCtrlMode::Setup;
 	SetupNewThrow();
 }
 
@@ -92,7 +92,7 @@ void APlayerCtrl::OnQuit()
 
 void APlayerCtrl::OnPuckResting(APuck *puck)
 {
-	if (PlayMode == EPlayMode::Setup) return; // player restarted on their own
+	if (PlayMode == EPlayerCtrlMode::Setup) return; // player restarted on their own
 	make_sure(puck);
 
 	FBox killVol = SceneProps->KillingVolume->GetBounds().GetBox();
@@ -106,32 +106,32 @@ void APlayerCtrl::OnPuckResting(APuck *puck)
 
 void APlayerCtrl::SetupNewThrow()
 {
-	if (PlayMode == EPlayMode::Spin) return;
+	if (PlayMode == EPlayerCtrlMode::Spin) return;
 
 	const FVector location = StartingPoint + StartingLine / 2.f;
 	APuck* new_puck = static_cast<APuck*>(GetWorld()->SpawnActor(PawnClass, &location));
 	make_sure(new_puck);
 
 	Possess(new_puck);
-	PlayMode = EPlayMode::Setup;
-	GetPuck()->ThrowMode = EThrowMode::SimpleThrow;
+	PlayMode = EPlayerCtrlMode::Setup;
+	GetPuck()->ThrowMode = EPuckThrowMode::Simple;
 	SpinAmount = 0.f;
 }
 
 void APlayerCtrl::ConsumeTouchOn(const ETouchIndex::Type FingerIndex, const FVector Location)
 {
 	if (FingerIndex != ETouchIndex::Touch1) {
-		GetPuck()->ThrowMode = EThrowMode::ThrowAndSpin;
+		GetPuck()->ThrowMode = EPuckThrowMode::WithSpin;
 		return;
 	}
 
-	if (PlayMode == EPlayMode::Spin) {
+	if (PlayMode == EPlayerCtrlMode::Spin) {
 		SpinStartPoint = FVector2D(Location);
 		return;
 	}
 
-	if (PlayMode != EPlayMode::Setup) return;
-	PlayMode = EPlayMode::Throw;
+	if (PlayMode != EPlayerCtrlMode::Setup) return;
+	PlayMode = EPlayerCtrlMode::Throw;
 
 	ThrowStartTime = GetWorld()->GetRealTimeSeconds();
 	ThrowStartPoint = FVector2D(Location);
@@ -142,17 +142,17 @@ void APlayerCtrl::ConsumeTouchOn(const ETouchIndex::Type FingerIndex, const FVec
 void APlayerCtrl::ConsumeTouchRepeat(const ETouchIndex::Type FingerIndex, const FVector Location)
 {
 	if (FingerIndex != ETouchIndex::Touch1) {
-		GetPuck()->ThrowMode = EThrowMode::ThrowAndSpin;
+		GetPuck()->ThrowMode = EPuckThrowMode::WithSpin;
 		return;
 	}
 
-	if (PlayMode == EPlayMode::Spin) {
+	if (PlayMode == EPlayerCtrlMode::Spin) {
 		float preview = CalculateSpin(Location);
 		GetPuck()->PreviewSpin(preview);
 		return;
 	}
 
-	if (PlayMode != EPlayMode::Throw) return;
+	if (PlayMode != EPlayerCtrlMode::Throw) return;
 	TouchHistory.Add(FVector2D(Location));
 }
 
@@ -160,12 +160,12 @@ void APlayerCtrl::ConsumeTouchOff(const ETouchIndex::Type FingerIndex, const FVe
 {
 	if (FingerIndex != ETouchIndex::Touch1) return;
 
-	if (PlayMode == EPlayMode::Spin) {
+	if (PlayMode == EPlayerCtrlMode::Spin) {
 		CalculateSpin(Location);
 		ExitSpinMode();
 		return;
 	}
-	if (PlayMode != EPlayMode::Throw) return;
+	if (PlayMode != EPlayerCtrlMode::Throw) return;
 
 	float deltaTime = GetWorld()->GetRealTimeSeconds() - ThrowStartTime;
 	FVector2D gestureEndPoint = FVector2D(Location);
@@ -175,11 +175,11 @@ void APlayerCtrl::ConsumeTouchOff(const ETouchIndex::Type FingerIndex, const FVe
 
 	if (velocity < EscapeVelocity) {
 		MovePuckOnTouchPosition(gestureEndPoint);
-		PlayMode = EPlayMode::Setup;
+		PlayMode = EPlayerCtrlMode::Setup;
 	} else { 
 		ThrowPuck(gestureVector, velocity);
-		PlayMode = GetPuck()->ThrowMode == EThrowMode::SimpleThrow ?
-			EPlayMode::Observe : EPlayMode::Spin;
+		PlayMode = GetPuck()->ThrowMode == EPuckThrowMode::Simple ?
+			EPlayerCtrlMode::Observe : EPlayerCtrlMode::Spin;
 	}
 }
 
@@ -192,7 +192,7 @@ void APlayerCtrl::ThrowPuck(FVector2D gestureVector, float velocity)
 
 	auto X = FMath::Clamp(FMath::Abs(gestureVector.Y), 0.f, ThrowForceMax);
 	auto Y = FMath::Clamp(gestureVector.X, -ThrowForceMax, ThrowForceMax);
-	if (GetPuck()->ThrowMode == EThrowMode::ThrowAndSpin) {
+	if (GetPuck()->ThrowMode == EPuckThrowMode::WithSpin) {
 		Y = 0.f;
 		GetWorldTimerManager().SetTimer(SpinTimer, this, &APlayerCtrl::EnterSpinMode,
 			1.f / 60.f, false);
@@ -214,7 +214,7 @@ float APlayerCtrl::CalculateSpin(FVector touchLocation)
 
 void APlayerCtrl::EnterSpinMode()
 {
-	PlayMode = EPlayMode::Spin;
+	PlayMode = EPlayerCtrlMode::Spin;
 
 	GetPuck()->OnEnterSpin();
 	GetWorldSettings()->SetTimeDilation(SpinSlowMoFactor);
@@ -225,8 +225,8 @@ void APlayerCtrl::EnterSpinMode()
 
 void APlayerCtrl::ExitSpinMode()
 {
-	if (PlayMode != EPlayMode::Spin) return; // can be triggered by timer or user, choose earliest
-	PlayMode = EPlayMode::Observe;
+	if (PlayMode != EPlayerCtrlMode::Spin) return; // can be triggered by timer or user, choose earliest
+	PlayMode = EPlayerCtrlMode::Observe;
 
 	GetPuck()->OnExitSpin();
 	GetPuck()->ApplySpin(SpinAmount);
@@ -271,9 +271,4 @@ void APlayerCtrl::SwitchToDetailView()
 void APlayerCtrl::SwitchToPlayView()
 {
 	SetViewTargetWithBlend(GetPuck(), .25f);
-}
-
-EGameTypes APlayerCtrl::GetGameType()
-{
-	return GetWorld()->GetGameState<AShuffGameState>()->GameType;
 }
