@@ -60,11 +60,6 @@ APuck::APuck()
 	// disable so the PC will spawn us, but this is a good shortcut for tests
 	AutoPossessPlayer = EAutoReceiveInput::Disabled;
 
-	if (auto sys = UGameSubSys::Get(this)) {
-		//TODO: better system
-		Color = sys->NextPuckColorGenerator++ % 2 ? EPuckColor::Red : EPuckColor::Blue;
-	}
-
 	PrimaryActorTick.bCanEverTick = true;
 }
 
@@ -75,8 +70,9 @@ void APuck::ApplyThrow(FVector2D force)
 	State = EPuckState::Traveling;
 }
 
-inline UStaticMeshComponent* FindCap(const char* name, AActor* parent)
+inline UStaticMeshComponent* FindCap(EPuckColor color, AActor* parent)
 {
+	auto name = color == EPuckColor::Red ? "Puck_Cap_Red" : "Puck_Cap_Blue"; //TODO: better way of identify
 	TInlineComponentArray<UStaticMeshComponent*> compList(parent);
 	for (auto* c : compList) {
 		if (c->GetName() == name) return c;
@@ -84,10 +80,17 @@ inline UStaticMeshComponent* FindCap(const char* name, AActor* parent)
 	return nullptr;
 }
 
+void APuck::SetColor(EPuckColor newColor)
+{
+	auto prev = newColor == EPuckColor::Red ? EPuckColor::Blue : EPuckColor::Red;
+	auto mesh = FindCap(prev, this);
+	mesh->SetHiddenInGame(true);
+	Color = newColor;
+}
+
 void APuck::PreviewSpin(float spinAmount)
 {
-	auto name = Color == EPuckColor::Red ? "Puck_Cap_Red" : "Puck_Cap_Blue"; //TODO: better way of identify
-	auto mesh = FindCap(name, this);
+	auto mesh = FindCap(Color, this);
 	mesh->SetRelativeRotation(FRotator(0, spinAmount, 0));
 }
 

@@ -15,20 +15,44 @@
 
 #include "GameModes.h"
 
-#include "Net/UnrealNetwork.h"
+#include "Math/UnrealMathUtility.h"
 
-void AShuffGameState::BeginPlay()
+//#include "Net/UnrealNetwork.h"
+//
+//void AShuffGameState::BeginPlay()
+//{
+//	Super::BeginPlay();
+//
+//	if (GetWorld()->IsGameWorld() && GetLocalRole() == ROLE_Authority) {
+//		GameType = static_cast<AShuffGameMode*>(AuthorityGameMode)->GameType;
+//	}
+//}
+
+//void AShuffGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+//{
+//	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+//
+//	DOREPLIFETIME(AShuffGameState, GameType);
+//}
+
+void APracticeGameState::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (GetWorld()->IsGameWorld() && GetLocalRole() == ROLE_Authority) {
-		GameType = static_cast<AShuffGameMode*>(AuthorityGameMode)->GameType;
-	}
+	InPlayTurn = EGameTurn::Player1;
+	InPlayPuckColor = EPuckColor::Red;
 }
 
-void AShuffGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+void A2PlayersGameState::BeginPlay()
 {
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	Super::BeginPlay();
 
-	DOREPLIFETIME(AShuffGameState, GameType);
+	InPlayPuckColor = FMath::RandBool() ? EPuckColor::Red : EPuckColor::Blue;
+	InPlayTurn = InPlayPuckColor == EPuckColor::Red ? EGameTurn::Player1 : EGameTurn::Player2;
+}
+
+void A2PlayersGameState::NextTurn()
+{
+	InPlayPuckColor = InPlayPuckColor == EPuckColor::Blue ? EPuckColor::Red : EPuckColor::Blue;
+	InPlayTurn = InPlayPuckColor == EPuckColor::Red ? EGameTurn::Player1 : EGameTurn::Player2;
 }

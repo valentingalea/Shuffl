@@ -20,7 +20,7 @@
 UGameSubSys* UGameSubSys::Get(const UObject* ContextObject)
 {
 	if (UWorld* World = GEngine->GetWorldFromContextObject(ContextObject, 
-		EGetWorldErrorMode::LogAndReturnNull)) {
+		EGetWorldErrorMode::ReturnNull)) {
 		return UGameInstance::GetSubsystem<UGameSubSys>(World->GetGameInstance());
 	}
 

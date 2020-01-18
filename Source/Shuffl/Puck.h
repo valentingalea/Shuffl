@@ -57,6 +57,7 @@ public:
 	FVector2D Velocity = FVector2D::ZeroVector;
 	void ApplyThrow(FVector2D);
 	void MoveTo(FVector);
+	void SetColor(EPuckColor);
 
 	void ApplySpin(float);
 	void PreviewSpin(float);

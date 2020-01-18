@@ -42,7 +42,4 @@ public:
 
 	UPROPERTY(BlueprintAssignable, Category = ScoringEvents)
 	FEvent_ScoreChanged ScoreChanged;
-
-	//TODO: do a better system
-	uint32 NextPuckColorGenerator = 0;
 };

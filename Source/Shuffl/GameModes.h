@@ -15,38 +15,45 @@
 
 #pragma once
 
-#include "GameFramework/GameModeBase.h"
-#include "GameFramework/GameStateBase.h"
+#include "GameFramework/GameMode.h"
+#include "GameFramework/GameState.h"
+
+#include "Def.h"
 
 #include "GameModes.generated.h"
 
-UENUM(BlueprintType)
-enum class EGameTypes : uint8
-{
-	Practice,
-	TwoPlayers
-};
+//
+// the GameMode classes are BP only for now...
+//
 
 UCLASS()
-class SHUFFL_API AShuffGameMode : public AGameModeBase
+class SHUFFL_API ACommonGameState : public AGameState
 {
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(EditAnywhere, NoClear, BlueprintReadOnly, Category = Classes)
-	EGameTypes GameType = EGameTypes::Practice;
+	EGameTurn InPlayTurn;
+	EPuckColor InPlayPuckColor;
+
+	//TODO: this needs to be on GameMode & RPC'ed from client
+	virtual void NextTurn() {}
 };
 
 UCLASS()
-class SHUFFL_API AShuffGameState : public AGameStateBase
+class SHUFFL_API APracticeGameState : public ACommonGameState
 {
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(Replicated)
-	EGameTypes GameType;
-
-private:
 	virtual void BeginPlay() override;
-	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty> &) const override;
+};
+
+UCLASS()
+class SHUFFL_API A2PlayersGameState : public ACommonGameState
+{
+	GENERATED_BODY()
+
+public:
+	virtual void BeginPlay() override;
+	virtual void NextTurn() override;
 };
