@@ -13,12 +13,6 @@
 			]
 		}
 	],
-	"Plugins": [
-		{
-			"Name": "HDRIBackdrop",
-			"Enabled": true
-		}
-	],
 	"TargetPlatforms": [
 		"Android",
 		"WindowsNoEditor"
