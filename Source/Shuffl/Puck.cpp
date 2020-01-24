@@ -21,6 +21,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "Components/ArrowComponent.h"
 
 #include "Shuffl.h"
 #include "GameSubSys.h"
@@ -148,4 +149,20 @@ void APuck::Tick(float deltaTime)
 			sys->PuckResting.ExecuteIfBound(this);
 		}
 	}
+}
+
+void APuck::ShowSlingshotPreview(FVector rot, FColor color)
+{
+	auto* arrow = static_cast<UArrowComponent*>(GetComponentByClass(UArrowComponent::StaticClass()));
+	make_sure(arrow);
+	arrow->SetRelativeRotation(rot.Rotation());
+	arrow->SetArrowColor(color);
+	arrow->SetHiddenInGame(false);
+}
+
+void APuck::HideSlingshotPreview()
+{
+	auto* arrow = static_cast<UArrowComponent*>(GetComponentByClass(UArrowComponent::StaticClass()));
+	make_sure(arrow);
+	arrow->SetHiddenInGame(true);
 }

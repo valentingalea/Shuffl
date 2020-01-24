@@ -42,6 +42,7 @@ enum class EPlayerCtrlMode
 {
 	Setup,
 	Throw,
+	Slingshot,
 	Spin,
 	Observe
 };

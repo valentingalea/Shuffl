@@ -23,18 +23,20 @@
 #include "GameFramework/PlayerState.h"
 #include "DrawDebugHelpers.h"
 #include "Math/UnrealMathUtility.h"
-#include "LevelSequence/Public/LevelSequenceActor.h"
 
 #include "Shuffl.h"
 #include "GameSubSys.h"
 #include "ScoringVolume.h"
 
-//#define DEBUG_DRAW_TOUCH
-
 ASceneProps::ASceneProps()
 {
 	auto root = CreateDefaultSubobject<USceneComponent>(TEXT("Dummy"));
 	RootComponent = root;
+}
+
+APlayerCtrl::APlayerCtrl()
+{
+	bShowMouseCursor = true;
 }
 
 void APlayerCtrl::BeginPlay()
@@ -124,65 +126,94 @@ void APlayerCtrl::SetupNewThrow()
 	SpinAmount = 0.f;
 }
 
-void APlayerCtrl::ConsumeTouchOn(const ETouchIndex::Type FingerIndex, const FVector Location)
+void APlayerCtrl::ConsumeTouchOn(const ETouchIndex::Type fingerIndex, const FVector location)
 {
-	if (FingerIndex != ETouchIndex::Touch1) {
+	if (fingerIndex != ETouchIndex::Touch1) {
 		GetPuck()->ThrowMode = EPuckThrowMode::WithSpin;
 		return;
 	}
 
 	if (PlayMode == EPlayerCtrlMode::Spin) {
-		SpinStartPoint = FVector2D(Location);
+		SpinStartPoint = FVector2D(location);
 		return;
 	}
 
 	if (PlayMode != EPlayerCtrlMode::Setup) return;
-	PlayMode = EPlayerCtrlMode::Throw;
+	PlayMode = EPlayerCtrlMode::Throw; // depending on vertical dir this could turn into Slingshot
 
 	ThrowStartTime = GetWorld()->GetRealTimeSeconds();
-	ThrowStartPoint = FVector2D(Location);
+	ThrowStartPoint = FVector2D(location);
 	TouchHistory.Reset();
 	TouchHistory.Add(ThrowStartPoint);
 }
 
-void APlayerCtrl::ConsumeTouchRepeat(const ETouchIndex::Type FingerIndex, const FVector Location)
+void APlayerCtrl::ConsumeTouchRepeat(const ETouchIndex::Type fingerIndex, const FVector location)
 {
-	if (FingerIndex != ETouchIndex::Touch1) {
+	if (fingerIndex != ETouchIndex::Touch1) {
 		GetPuck()->ThrowMode = EPuckThrowMode::WithSpin;
 		return;
 	}
 
 	if (PlayMode == EPlayerCtrlMode::Spin) {
-		float preview = CalculateSpin(Location);
+		float preview = CalculateSpin(location);
 		GetPuck()->PreviewSpin(preview);
 		return;
 	}
 
-	if (PlayMode != EPlayerCtrlMode::Throw) return;
-	TouchHistory.Add(FVector2D(Location));
+	if (PlayMode == EPlayerCtrlMode::Observe) return;
+
+	if (location.Y > ThrowStartPoint.Y) {
+		FHitResult hitResult;
+		GetHitResultAtScreenPosition(FVector2D(location), ECC_Visibility,
+			false/*trace complex*/, hitResult);
+
+		if (hitResult.bBlockingHit) {
+			const auto I = hitResult.ImpactPoint;
+			const auto P = GetPuck()->GetActorLocation();
+			SlingshotDir = P - FVector(I.X, I.Y, P.Z);
+			auto color = FColor(128 + (int(SlingshotDir.Size() * SlingshotForceScaling) % 128), 15, 15);
+			GetPuck()->ShowSlingshotPreview(SlingshotDir, color);
+
+			PlayMode = EPlayerCtrlMode::Slingshot;
+		}
+	} else {
+		PlayMode = EPlayerCtrlMode::Throw;
+	}
+
+	TouchHistory.Add(FVector2D(location));
 }
 
-void APlayerCtrl::ConsumeTouchOff(const ETouchIndex::Type FingerIndex, const FVector Location)
+void APlayerCtrl::ConsumeTouchOff(const ETouchIndex::Type fingerIndex, const FVector location)
 {
-	if (FingerIndex != ETouchIndex::Touch1) return;
+	if (fingerIndex != ETouchIndex::Touch1) return;
 
 	if (PlayMode == EPlayerCtrlMode::Spin) {
-		CalculateSpin(Location);
+		CalculateSpin(location);
 		ExitSpinMode();
 		return;
 	}
-	if (PlayMode != EPlayerCtrlMode::Throw) return;
+
+	if (PlayMode == EPlayerCtrlMode::Observe) return;
+	GetPuck()->HideSlingshotPreview();
 
 	float deltaTime = GetWorld()->GetRealTimeSeconds() - ThrowStartTime;
-	FVector2D gestureEndPoint = FVector2D(Location);
+	FVector2D gestureEndPoint = FVector2D(location);
 	FVector2D gestureVector = gestureEndPoint - ThrowStartPoint;
 	float distance = gestureVector.Size();
 	float velocity = distance / deltaTime;
 
-	if (velocity < EscapeVelocity) {
+	const float limit = PlayMode == EPlayerCtrlMode::Slingshot ? 
+		(EscapeVelocity / SlingshotForceScaling) : EscapeVelocity;
+
+	if (velocity < limit) {
 		MovePuckOnTouchPosition(gestureEndPoint);
 		PlayMode = EPlayerCtrlMode::Setup;
-	} else { 
+	} else {
+		if (PlayMode == EPlayerCtrlMode::Slingshot) {
+			GetPuck()->ApplyThrow(FVector2D(SlingshotDir) * SlingshotForceScaling);
+			PlayMode = EPlayerCtrlMode::Observe;
+			return;
+		}
 		ThrowPuck(gestureVector, velocity);
 		PlayMode = GetPuck()->ThrowMode == EPuckThrowMode::Simple ?
 			EPlayerCtrlMode::Observe : EPlayerCtrlMode::Spin;
@@ -244,16 +275,16 @@ void APlayerCtrl::ExitSpinMode()
 		FString::Printf(TEXT("spin %3.1f"), SpinAmount));
 }
 
-void APlayerCtrl::MovePuckOnTouchPosition(FVector2D ScreenSpaceLocation)
+void APlayerCtrl::MovePuckOnTouchPosition(FVector2D screenSpaceLocation)
 {
-	FHitResult HitResult;
-	GetHitResultAtScreenPosition(ScreenSpaceLocation, ECC_Visibility,
-		false/*trace complex*/, HitResult);
+	FHitResult hitResult;
+	GetHitResultAtScreenPosition(screenSpaceLocation, ECC_Visibility,
+		false/*trace complex*/, hitResult);
 
-	if (HitResult.bBlockingHit)
+	if (hitResult.bBlockingHit)
 	{
 		// project the touched point onto the start line
-		const auto &P = HitResult.ImpactPoint;
+		const auto &P = hitResult.ImpactPoint;
 		//DrawDebugSphere(GetWorld(), P, 5, 4, FColor::Green, false, 3);
 		const FVector AP = P - StartingPoint;
 		FVector AB = StartingLine;

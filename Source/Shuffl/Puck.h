@@ -63,6 +63,9 @@ public:
 	void PreviewSpin(float);
 	void OnEnterSpin();
 	void OnExitSpin();
+
+	void ShowSlingshotPreview(FVector, FColor);
+	void HideSlingshotPreview();
 	
 	FBox GetBoundingBox(); // will return just the puck component not the auxiliary elements
 

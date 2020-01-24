@@ -48,6 +48,8 @@ class SHUFFL_API APlayerCtrl : public APlayerController
 	GENERATED_BODY()
 
 public:
+	APlayerCtrl();
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Setup)
 	UClass* PawnClass;
 
@@ -77,6 +79,10 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Spin)
 	float SpinSlowMoFactor = .1f;
+
+	/** multiplier for the slingshot effect */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Slingshot)
+	float SlingshotForceScaling = 5.f;
 
 	UFUNCTION(BlueprintCallable)
 	void SetupNewThrow();
@@ -116,8 +122,9 @@ private:
 	FVector2D SpinStartPoint = FVector2D::ZeroVector;
 	float SpinAmount = 0.f;
 	FTimerHandle SpinTimer;
-public: //TODO: needed for HUD access, encapsulate better
 	TArray<FVector2D> TouchHistory;
+
+	FVector SlingshotDir = FVector::ZeroVector;
 };
 
 inline APuck* APlayerCtrl::GetPuck()
