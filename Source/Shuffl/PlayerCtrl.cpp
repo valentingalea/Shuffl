@@ -74,7 +74,7 @@ void APlayerCtrl::BeginPlay()
 		make_sure(SceneProps->StartingPoint);
 		make_sure(SceneProps->KillingVolume);
 
-		StartingPoint = (SceneProps->StartingPoint)->GetActorLocation() - StartingLine / 2.f;
+		StartingPoint = SceneProps->StartingPoint->GetActorLocation();
 	}
 
 	{
@@ -128,7 +128,7 @@ void APlayerCtrl::SetupNewThrow()
 {
 	if (PlayMode == EPlayerCtrlMode::Spin) return;
 
-	const FVector location = StartingPoint + StartingLine / 2.f;
+	const FVector location = StartingPoint;
 	APuck* new_puck = static_cast<APuck*>(GetWorld()->SpawnActor(PawnClass, &location));
 	make_sure(new_puck);
 
@@ -311,17 +311,17 @@ void APlayerCtrl::MovePuckOnTouchPosition(FVector2D touchLocation)
 	{
 		// project the touched point onto the start line
 		const auto &P = hitResult.ImpactPoint;
-		//DrawDebugSphere(GetWorld(), P, 5, 4, FColor::Green, false, 3);
-		const FVector AP = P - StartingPoint;
+		const FVector A = StartingPoint - StartingLine / 2.f;
+		const FVector AP = P - A;
 		FVector AB = StartingLine;
 		AB.Normalize();
 		const float d = FVector::DotProduct(AP, AB);
-		const FVector location = StartingPoint + FVector(0, d, 0);
+		const FVector location = A + FVector(0, FMath::Clamp(d, 0.f, StartingLine.Y), 0);
+
+		//DrawDebugSphere(GetWorld(), P, 5, 4, FColor::Green, false, 3);
 		//DrawDebugSphere(GetWorld(), location, 5, 4, FColor::Red, false, 3);
 
-		if (auto p = GetPuck()) {
-			p->MoveTo(location);
-		}
+		GetPuck()->MoveTo(location);
 	}
 }
 
