@@ -96,35 +96,44 @@ public:
 private:
 	virtual void BeginPlay() override;
 	virtual void SetupInputComponent() override;
+	void OnQuit();
 
 	APuck* GetPuck();
+	void OnPuckResting(APuck*);
+	void MovePuckOnTouchPosition(FVector2D);
 
 	void ConsumeTouchOn(const ETouchIndex::Type FingerIndex, const FVector Location);
 	void ConsumeTouchRepeat(const ETouchIndex::Type FingerIndex, const FVector Location);
 	void ConsumeTouchOff(const ETouchIndex::Type FingerIndex, const FVector Location);
-	
-	void OnQuit();
-	void OnPuckResting(APuck *);
-
-	void MovePuckOnTouchPosition(FVector2D);
-	void ThrowPuck(FVector2D, float);
-	void EnterSpinMode();
-	void ExitSpinMode();
-	float CalculateSpin(FVector); // returns diff number for preview
+	TArray<FVector2D> TouchHistory;
 
 	TWeakObjectPtr<ASceneProps> SceneProps;
-
 	EPlayerCtrlMode PlayMode = EPlayerCtrlMode::Setup;
 
+//
+// Flick mode
+//
+	void ThrowPuck(FVector2D, float);
 	FVector StartingPoint = FVector::ZeroVector;
 	float ThrowStartTime = 0.f;
 	FVector2D ThrowStartPoint = FVector2D::ZeroVector;
 	FVector2D SpinStartPoint = FVector2D::ZeroVector;
+
+//
+// Spin mode
+//
+	void EnterSpinMode();
+	void ExitSpinMode();
+	float CalculateSpin(FVector); // returns diff number for preview
 	float SpinAmount = 0.f;
 	FTimerHandle SpinTimer;
-	TArray<FVector2D> TouchHistory;
 
+//
+// Slingshot mode
+//
 	FVector SlingshotDir = FVector::ZeroVector;
+	void PreviewSlingshot(FVector);
+	void DoSlingshot();
 };
 
 inline APuck* APlayerCtrl::GetPuck()
