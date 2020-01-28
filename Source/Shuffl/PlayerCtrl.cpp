@@ -31,7 +31,7 @@
 template <typename FmtType, typename... Types>
 inline void DebugPrint(const FmtType& fmt, Types... args)
 {
-#if 1
+#if 0
 	static uint64 id = 0;
 	GEngine->AddOnScreenDebugMessage(id++, 3/*sec*/, FColor::Green,
 		FString::Printf(fmt, args...));
@@ -142,6 +142,7 @@ void APlayerCtrl::SetupNewThrow()
 	GetPuck()->SetColor(gameState->InPlayPuckColor);
 	GetPuck()->ThrowMode = EPuckThrowMode::Simple;
 	SpinAmount = 0.f;
+	SlingshotDir = FVector::ZeroVector;
 }
 
 static FHitResult TouchStartHitResult;
@@ -205,7 +206,13 @@ void APlayerCtrl::ConsumeTouchOff(const ETouchIndex::Type fingerIndex, const FVe
 	}
 
 	if (PlayMode == EPlayerCtrlMode::Observe) return;
+
 	GetPuck()->HideSlingshotPreview();
+	if (PlayMode == EPlayerCtrlMode::Slingshot && SlingshotDir.Size() > 10.f) {
+		DoSlingshot();
+		PlayMode = EPlayerCtrlMode::Observe;
+		return;
+	}
 
 	float deltaTime = GetWorld()->GetRealTimeSeconds() - ThrowStartTime;
 	FVector2D gestureEndPoint = FVector2D(location);
@@ -217,14 +224,10 @@ void APlayerCtrl::ConsumeTouchOff(const ETouchIndex::Type fingerIndex, const FVe
 		MovePuckOnTouchPosition(gestureEndPoint);
 		PlayMode = EPlayerCtrlMode::Setup;
 	} else {
-		if (PlayMode == EPlayerCtrlMode::Slingshot) {
-			DoSlingshot();
-			PlayMode = EPlayerCtrlMode::Observe;
-		} else {
-			ThrowPuck(gestureVector, velocity);
-			PlayMode = GetPuck()->ThrowMode == EPuckThrowMode::Simple ?
-				EPlayerCtrlMode::Observe : EPlayerCtrlMode::Spin;
-		}
+		ThrowPuck(gestureVector, velocity);
+		PlayMode = GetPuck()->ThrowMode == EPuckThrowMode::Simple ?
+			EPlayerCtrlMode::Observe : EPlayerCtrlMode::Spin;
+
 	}
 }
 
@@ -289,7 +292,7 @@ void APlayerCtrl::PreviewSlingshot(FVector touchLocation)
 	if (a >= .785f && a <= 2.356f) // 45-135 degrees
 	{
 		SlingshotDir = d;
-		auto color = FColor(127 + (int(SlingshotDir.Size()) % 128), 64, 64);
+		auto color = FColor(127 + (int(SlingshotDir.Size() * SlingshotForceScaling) % 128), 64, 64);
 		GetPuck()->ShowSlingshotPreview(SlingshotDir, color);
 	}
 }
