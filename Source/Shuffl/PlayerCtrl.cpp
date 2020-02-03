@@ -15,7 +15,7 @@
 
 #include "PlayerCtrl.h"
 
-#include "Engine.h"
+#include "EngineMinimal.h"
 #include "EngineUtils.h"
 #include "Components/InputComponent.h"
 #include "Camera/CameraActor.h"

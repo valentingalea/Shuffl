@@ -15,6 +15,8 @@
 
 #include "GameModes.h"
 
+#include "EngineMinimal.h"
+#include "Engine/Player.h"
 #include "Math/UnrealMathUtility.h"
 #include "Net/UnrealNetwork.h"
 #include "Kismet/GameplayStatics.h"
