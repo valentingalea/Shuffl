@@ -95,6 +95,9 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void SwitchToPlayView();
 
+	UFUNCTION(Client, Reliable)
+	void Client_EnterScoreCounting();
+
 private:
 	virtual void BeginPlay() override;
 	virtual void SetupInputComponent() override;

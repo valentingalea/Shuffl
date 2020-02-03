@@ -99,7 +99,14 @@ void AShuffl2PlayersGameMode::NextTurn()
 		prev_pc = Cast<APlayerCtrl>(*iterator);
 	}
 
-	//TODO: manage pucks depletion / round management
+	//TODO: handle round end
+	//auto* prev_ps = prev_pc->GetPlayerState<AShufflPlayerState>();
+	//auto* ps = pc->GetPlayerState<AShufflPlayerState>();
+	//if ((prev_ps->PucksToPlay + ps->PucksToPlay) == 3 + 3) {
+	//	pc->Client_EnterScoreCounting();
+	//	return;
+	//}
+	//ps->PucksToPlay--;
 
 	//TODO: manage score getting to 21
 
