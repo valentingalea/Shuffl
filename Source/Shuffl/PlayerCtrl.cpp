@@ -65,9 +65,7 @@ void APlayerCtrl::BeginPlay()
 // inviolable contracts
 	{
 		make_sure(PawnClass);
-	}
 
-	{
 		auto iter = TActorIterator<ASceneProps>(GetWorld());
 		make_sure(*iter);
 		SceneProps = *iter;
@@ -76,12 +74,10 @@ void APlayerCtrl::BeginPlay()
 		make_sure(SceneProps->KillingVolume);
 
 		StartingPoint = SceneProps->StartingPoint->GetActorLocation();
-	}
 
-	{
-		auto sys = UGameSubSys::Get(this);
-		make_sure(sys);
-		sys->PuckResting.AddUObject(this, &APlayerCtrl::OnPuckResting);
+		if (auto sys = UGameSubSys::Get(this)) {
+			sys->PuckResting.AddUObject(this, &APlayerCtrl::OnPuckResting);
+		}
 	}
 
 	TouchHistory.Reserve(64);
@@ -147,11 +143,16 @@ void APlayerCtrl::Client_NewThrow_Implementation()
 	make_sure(new_puck);
 
 	Possess(new_puck);
-	PlayMode = EPlayerCtrlMode::Setup;
-	GetPuck()->SetColor(GetPlayerState<AShufflPlayerState>()->Color);
-	GetPuck()->ThrowMode = EPuckThrowMode::Simple;
+	new_puck->SetColor(GetPlayerState<AShufflPlayerState>()->Color);
+	new_puck->ThrowMode = EPuckThrowMode::Simple;
 	SpinAmount = 0.f;
 	SlingshotDir = FVector::ZeroVector;
+
+	PlayMode = EPlayerCtrlMode::Setup;
+
+	if (auto sys = UGameSubSys::Get(this)) {
+		sys->PlayersChangeTurn.Broadcast(new_puck->Color);
+	}
 }
 
 static FHitResult TouchStartHitResult;

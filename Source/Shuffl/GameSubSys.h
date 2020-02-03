@@ -23,7 +23,6 @@
 #include "GameSubSys.generated.h"
 
 // only handled in C++
-DECLARE_DELEGATE_OneParam(FEvent_AwardPoints, int);
 DECLARE_MULTICAST_DELEGATE_OneParam(FEvent_PuckResting, class APuck *);
 
 // handled in C++/Blueprint
@@ -36,12 +35,7 @@ class UGameSubSys : public UGameInstanceSubsystem
 	GENERATED_BODY()
 
 public:
-	//virtual void Initialize(FSubsystemCollectionBase& Collection) override {}
-	//virtual void Deinitialize() override {}
-
 	static UGameSubSys* Get(const UObject* ContextObject);
-
-	FEvent_AwardPoints AwardPoints;
 
 	FEvent_PuckResting PuckResting;
 
