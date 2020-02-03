@@ -16,44 +16,93 @@
 #include "GameModes.h"
 
 #include "Math/UnrealMathUtility.h"
+#include "Net/UnrealNetwork.h"
+#include "Kismet/GameplayStatics.h"
 
-#include "GameSubSys.h"
+#include "PlayerCtrl.h"
 
-//#include "Net/UnrealNetwork.h"
-//
-//void AShuffGameState::BeginPlay()
-//{
-//	Super::BeginPlay();
-//
-//	if (GetWorld()->IsGameWorld() && GetLocalRole() == ROLE_Authority) {
-//		GameType = static_cast<AShuffGameMode*>(AuthorityGameMode)->GameType;
-//	}
-//}
-
-//void AShuffGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
-//{
-//	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-//
-//	DOREPLIFETIME(AShuffGameState, GameType);
-//}
-
-void APracticeGameState::NextTurn()
+void AShufflPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
-	InPlayTurn = EGameTurn::Player1;
-	InPlayPuckColor = EPuckColor::Red;
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(AShufflPlayerState, Color);
+	DOREPLIFETIME(AShufflPlayerState, PucksToPlay);
 }
 
-void A2PlayersGameState::NextTurn()
+void AShufflGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
-	if (FirstTurn) {
-		InPlayPuckColor = FMath::RandBool() ? EPuckColor::Red : EPuckColor::Blue;
-		FirstTurn = false;
-	} else {
-		InPlayPuckColor = InPlayPuckColor == EPuckColor::Blue ? EPuckColor::Red : EPuckColor::Blue;
-	}
-	InPlayTurn = InPlayPuckColor == EPuckColor::Red ? EGameTurn::Player1 : EGameTurn::Player2;
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	if (auto* sys = UGameSubSys::Get(this)) {
-		sys->PlayersChangeTurn.Broadcast(InPlayPuckColor);
+	DOREPLIFETIME(AShufflGameState, RoundTurn);
+}
+
+void AShufflPracticeGameMode::HandleMatchHasStarted()
+{
+	Super::HandleMatchHasStarted();
+
+	NextTurn();
+}
+
+void AShufflPracticeGameMode::NextTurn()
+{
+	auto iterator = GetWorld()->GetPlayerControllerIterator(); 
+	auto* controller = Cast<APlayerCtrl>(*iterator);
+	controller->Client_NewThrow();
+}
+
+void AShuffl2PlayersGameMode::HandleMatchIsWaitingToStart()
+{
+	Super::HandleMatchIsWaitingToStart();
+
+	auto iterator = GetWorld()->GetPlayerControllerIterator();
+	auto* p1 = Cast<APlayerCtrl>(*iterator);
+
+	// spawn a second player controller tied to the same local player
+	auto* p2 = Cast<APlayerCtrl>(SpawnPlayerControllerCommon(
+		ROLE_SimulatedProxy, //TODO: understand better the implications of this
+		p1->K2_GetActorLocation(), p1->K2_GetActorRotation(),
+		PlayerControllerClass));
+	GetWorld()->AddController(p2);
+	p2->Player = p1->Player;
+
+	// give the player colors
+	auto randColor = FMath::RandBool() ? EPuckColor::Red : EPuckColor::Blue;
+	p1->GetPlayerState<AShufflPlayerState>()->Color = randColor;
+	p2->GetPlayerState<AShufflPlayerState>()->Color = (randColor == EPuckColor::Blue)
+		? EPuckColor::Red : EPuckColor::Blue;
+}
+
+void AShuffl2PlayersGameMode::HandleMatchHasStarted()
+{
+	Super::HandleMatchHasStarted();
+
+	// start player 1 by pretending there's a swap
+	GetGameState<AShufflGameState>()->RoundTurn = ERoundTurn::Player2;
+	NextTurn();
+}
+
+void AShuffl2PlayersGameMode::NextTurn()
+{
+	auto* state = GetGameState<AShufflGameState>();
+
+	auto iterator = GetWorld()->GetPlayerControllerIterator();
+	APlayerCtrl *pc, *prev_pc = nullptr;
+	if (state->RoundTurn == ERoundTurn::Player1) {
+		state->RoundTurn = ERoundTurn::Player2;
+		prev_pc = Cast<APlayerCtrl>(*iterator);
+		iterator++;
+		pc = Cast<APlayerCtrl>(*iterator);
+	} else {
+		state->RoundTurn = ERoundTurn::Player1;
+		pc = Cast<APlayerCtrl>(*iterator);
+		iterator++;
+		prev_pc = Cast<APlayerCtrl>(*iterator);
 	}
+
+	//TODO: manage pucks depletion / round management
+
+	//TODO: manage score getting to 21
+
+	prev_pc->Player->SwitchController(pc);
+	pc->Client_NewThrow();
 }

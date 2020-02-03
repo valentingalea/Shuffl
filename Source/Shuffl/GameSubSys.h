@@ -24,7 +24,7 @@
 
 // only handled in C++
 DECLARE_DELEGATE_OneParam(FEvent_AwardPoints, int);
-DECLARE_DELEGATE_OneParam(FEvent_PuckResting, class APuck *);
+DECLARE_MULTICAST_DELEGATE_OneParam(FEvent_PuckResting, class APuck *);
 
 // handled in C++/Blueprint
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FEvent_ScoreChanged, int, NewScoreValue);

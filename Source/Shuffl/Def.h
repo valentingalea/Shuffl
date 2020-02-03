@@ -18,14 +18,14 @@
 #include "CoreMinimal.h"
 #include "Def.generated.h"
 
-enum class EPuckState
+enum class EPuckState : uint8
 {
 	Setup,
 	Traveling,
 	Resting
 };
 
-enum class EPuckThrowMode
+enum class EPuckThrowMode : uint8
 {
 	Simple,
 	WithSpin
@@ -38,7 +38,7 @@ enum class EPuckColor : uint8
 	Blue
 };
 
-enum class EPlayerCtrlMode
+enum class EPlayerCtrlMode : uint8
 {
 	Setup,
 	Throw,
@@ -47,9 +47,16 @@ enum class EPlayerCtrlMode
 	Observe
 };
 
-enum class EGameTurn
+UENUM(BlueprintType)
+enum class ERoundTurn : uint8
 {
 	Player1,
 	Player2,
 	CountingPoints
+};
+
+namespace ERound
+{
+	static constexpr uint8 PucksPerPlayer = 4;
+	static constexpr uint8 TotalThrows = PucksPerPlayer * 2;
 };

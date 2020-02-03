@@ -26,6 +26,7 @@
 
 #include "Shuffl.h"
 #include "GameSubSys.h"
+#include "GameModes.h"
 #include "ScoringVolume.h"
 
 template <typename FmtType, typename... Types>
@@ -80,12 +81,11 @@ void APlayerCtrl::BeginPlay()
 	{
 		auto sys = UGameSubSys::Get(this);
 		make_sure(sys);
-		sys->PuckResting.BindUObject(this, &APlayerCtrl::OnPuckResting);
+		sys->PuckResting.AddUObject(this, &APlayerCtrl::OnPuckResting);
 	}
 
 	TouchHistory.Reserve(64);
 	PlayMode = EPlayerCtrlMode::Setup;
-	SetupNewThrow();
 }
 
 void APlayerCtrl::SetupInputComponent()
@@ -98,7 +98,7 @@ void APlayerCtrl::SetupInputComponent()
 	InputComponent->BindAction(dv, IE_Pressed, this, &APlayerCtrl::SwitchToDetailView);
 	InputComponent->BindAction(dv, IE_Released, this, &APlayerCtrl::SwitchToPlayView);
 
-	InputComponent->BindAction("Rethrow", IE_Released, this, &APlayerCtrl::SetupNewThrow);
+	InputComponent->BindAction("Rethrow", IE_Released, this, &APlayerCtrl::Server_NewThrow);
 
 	InputComponent->BindTouch(EInputEvent::IE_Pressed, this, &APlayerCtrl::ConsumeTouchOn);
 	InputComponent->BindTouch(EInputEvent::IE_Repeat, this, &APlayerCtrl::ConsumeTouchRepeat);
@@ -112,8 +112,8 @@ void APlayerCtrl::OnQuit()
 
 void APlayerCtrl::OnPuckResting(APuck *puck)
 {
-	if (PlayMode == EPlayerCtrlMode::Setup) return; // player restarted on their own
 	make_sure(puck);
+	if (puck->Color != GetPlayerState<AShufflPlayerState>()->Color) return;
 
 	FBox killVol = SceneProps->KillingVolume->GetBounds().GetBox();
 	FBox puckVol = puck->GetBoundingBox();
@@ -121,25 +121,34 @@ void APlayerCtrl::OnPuckResting(APuck *puck)
 		puck->Destroy();
 	}
 
-	SetupNewThrow();
+	if (PlayMode != EPlayerCtrlMode::Observe) return; // player restarted on their own
+	Server_NewThrow();
+	//TODO: check for situation when other player manual trigger
+	//TODO: should reflect playmode on server (gamestate) to better react
 }
 
-void APlayerCtrl::SetupNewThrow()
+bool APlayerCtrl::Server_NewThrow_Validate()
 {
+	return true;
+}
+
+void APlayerCtrl::Server_NewThrow_Implementation()
+{
+	GetWorld()->GetAuthGameMode<AShufflCommonGameMode>()->NextTurn();
+}
+
+void APlayerCtrl::Client_NewThrow_Implementation()
+{
+//	ensure(GetLocalRole() != ROLE_Authority);
 	if (PlayMode == EPlayerCtrlMode::Spin) return;
 
 	const FVector location = StartingPoint;
 	APuck* new_puck = static_cast<APuck*>(GetWorld()->SpawnActor(PawnClass, &location));
 	make_sure(new_puck);
 
-	auto* gameState = Cast<ACommonGameState>(GetWorld()->GetGameState());
-	make_sure(gameState);
-	//TODO: needs to be RPC to GameMode
-	gameState->NextTurn();
-
 	Possess(new_puck);
 	PlayMode = EPlayerCtrlMode::Setup;
-	GetPuck()->SetColor(gameState->InPlayPuckColor);
+	GetPuck()->SetColor(GetPlayerState<AShufflPlayerState>()->Color);
 	GetPuck()->ThrowMode = EPuckThrowMode::Simple;
 	SpinAmount = 0.f;
 	SlingshotDir = FVector::ZeroVector;
@@ -149,6 +158,7 @@ static FHitResult TouchStartHitResult;
 
 void APlayerCtrl::ConsumeTouchOn(const ETouchIndex::Type fingerIndex, const FVector location)
 {
+	make_sure(GetPuck());
 	if (fingerIndex != ETouchIndex::Touch1) {
 		GetPuck()->ThrowMode = EPuckThrowMode::WithSpin;
 		return;
@@ -172,6 +182,7 @@ void APlayerCtrl::ConsumeTouchOn(const ETouchIndex::Type fingerIndex, const FVec
 
 void APlayerCtrl::ConsumeTouchRepeat(const ETouchIndex::Type fingerIndex, const FVector location)
 {
+	make_sure(GetPuck());
 	if (fingerIndex != ETouchIndex::Touch1) {
 		GetPuck()->ThrowMode = EPuckThrowMode::WithSpin;
 		return;
@@ -197,6 +208,7 @@ void APlayerCtrl::ConsumeTouchRepeat(const ETouchIndex::Type fingerIndex, const 
 
 void APlayerCtrl::ConsumeTouchOff(const ETouchIndex::Type fingerIndex, const FVector location)
 {
+	make_sure(GetPuck());
 	if (fingerIndex != ETouchIndex::Touch1) return;
 
 	if (PlayMode == EPlayerCtrlMode::Spin) {
@@ -227,14 +239,11 @@ void APlayerCtrl::ConsumeTouchOff(const ETouchIndex::Type fingerIndex, const FVe
 		ThrowPuck(gestureVector, velocity);
 		PlayMode = GetPuck()->ThrowMode == EPuckThrowMode::Simple ?
 			EPlayerCtrlMode::Observe : EPlayerCtrlMode::Spin;
-
 	}
 }
 
 void APlayerCtrl::ThrowPuck(FVector2D gestureVector, float velocity)
 {
-	make_sure(GetPuck());
-
 	gestureVector.Normalize();
 	gestureVector *= velocity / ThrowForceScaling;
 

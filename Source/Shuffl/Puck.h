@@ -30,7 +30,7 @@ class SHUFFL_API APuck : public APawn
 public:
 	APuck();
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Setup)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Setup)
 	EPuckColor Color = EPuckColor::Red;
 
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = Setup)

@@ -146,7 +146,7 @@ void APuck::Tick(float deltaTime)
 	if ((vel.SizeSquared() < .0001f) && Lifetime > ThresholdToResting) {
 		State = EPuckState::Resting;
 		if (auto sys = UGameSubSys::Get(this)) {
-			sys->PuckResting.ExecuteIfBound(this);
+			sys->PuckResting.Broadcast(this);
 		}
 	}
 }

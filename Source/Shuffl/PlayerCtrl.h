@@ -20,7 +20,6 @@
 #include "GameFramework\PlayerController.h"
 
 #include "Puck.h"
-#include "GameModes.h"
 
 #include "PlayerCtrl.generated.h"
 
@@ -84,8 +83,11 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Slingshot)
 	float SlingshotForceScaling = 5.f;
 
-	UFUNCTION(BlueprintCallable)
-	void SetupNewThrow();
+	UFUNCTION(BlueprintCallable, Unreliable, Server, WithValidation)
+	void Server_NewThrow();
+
+	UFUNCTION(BlueprintCallable, Client, Reliable)
+	void Client_NewThrow();
 
 	UFUNCTION(BlueprintCallable)
 	void SwitchToDetailView();

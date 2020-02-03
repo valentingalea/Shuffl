@@ -15,6 +15,7 @@
 
 #pragma once
 
+#include "GameFramework/PlayerState.h"
 #include "GameFramework/GameMode.h"
 #include "GameFramework/GameState.h"
 
@@ -22,38 +23,63 @@
 
 #include "GameModes.generated.h"
 
-//
-// the GameMode classes are BP only for now...
-//
-
 UCLASS()
-class SHUFFL_API ACommonGameState : public AGameState
+class SHUFFL_API AShufflPlayerState : public APlayerState
 {
 	GENERATED_BODY()
 
 public:
-	bool FirstTurn = true;
-	EGameTurn InPlayTurn;
-	EPuckColor InPlayPuckColor;
+	//`float Score` is inherited
 
-	//TODO: this needs to be on GameMode & RPC'ed from client
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = Shuffl)
+	EPuckColor Color = EPuckColor::Red;
+
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = Shuffl)
+	uint8 PucksToPlay = ERound::PucksPerPlayer;
+
+	virtual void GetLifetimeReplicatedProps(TArray< FLifetimeProperty >&) const override;
+};
+
+UCLASS()
+class SHUFFL_API AShufflGameState : public AGameState
+{
+	GENERATED_BODY()
+
+public:
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = Shuffl)
+	ERoundTurn RoundTurn = ERoundTurn::Player1;
+
+	virtual void GetLifetimeReplicatedProps(TArray< FLifetimeProperty >&) const override;
+};
+
+UCLASS()
+class SHUFFL_API AShufflCommonGameMode : public AGameMode
+{
+	GENERATED_BODY()
+
+public:
 	virtual void NextTurn() {}
 };
 
 UCLASS()
-class SHUFFL_API APracticeGameState : public ACommonGameState
+class SHUFFL_API AShufflPracticeGameMode : public AShufflCommonGameMode
 {
 	GENERATED_BODY()
 
 public:
+	virtual void HandleMatchHasStarted() override;
+
 	virtual void NextTurn() override;
 };
 
 UCLASS()
-class SHUFFL_API A2PlayersGameState : public ACommonGameState
+class SHUFFL_API AShuffl2PlayersGameMode : public AShufflCommonGameMode
 {
 	GENERATED_BODY()
 
 public:
+	virtual void HandleMatchIsWaitingToStart() override;
+	virtual void HandleMatchHasStarted() override;
+
 	virtual void NextTurn() override;
 };
