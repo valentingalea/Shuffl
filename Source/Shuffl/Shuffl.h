@@ -18,5 +18,4 @@
 #include "CoreMinimal.h"
 
 #define make_sure(cond) \
-	ensure(cond); \
-	if (!(cond)) return
+	if (!(ensure(cond))) return
