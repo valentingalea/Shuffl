@@ -86,6 +86,7 @@ void AShuffl2PlayersGameMode::HandleMatchHasStarted()
 void AShuffl2PlayersGameMode::NextTurn()
 {
 	auto* state = GetGameState<AShufflGameState>();
+	state->GlobalTurnCounter++;
 
 	auto iterator = GetWorld()->GetPlayerControllerIterator();
 	APlayerCtrl *pc, *prev_pc = nullptr;

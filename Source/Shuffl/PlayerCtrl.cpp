@@ -94,7 +94,7 @@ void APlayerCtrl::SetupInputComponent()
 	InputComponent->BindAction(dv, IE_Pressed, this, &APlayerCtrl::SwitchToDetailView);
 	InputComponent->BindAction(dv, IE_Released, this, &APlayerCtrl::SwitchToPlayView);
 
-	InputComponent->BindAction("Rethrow", IE_Released, this, &APlayerCtrl::Server_NewThrow);
+	InputComponent->BindAction("Rethrow", IE_Released, this, &APlayerCtrl::RequestNewThrow);
 
 	InputComponent->BindTouch(EInputEvent::IE_Pressed, this, &APlayerCtrl::ConsumeTouchOn);
 	InputComponent->BindTouch(EInputEvent::IE_Repeat, this, &APlayerCtrl::ConsumeTouchRepeat);
@@ -117,10 +117,19 @@ void APlayerCtrl::OnPuckResting(APuck *puck)
 		puck->Destroy();
 	}
 
-	if (PlayMode != EPlayerCtrlMode::Observe) return; // player restarted on their own
+	// abort if player changed mode on his own
+	if (PlayMode != EPlayerCtrlMode::Observe) return;
+	// abort if next turn already happened
+	auto* gameState = Cast<AShufflGameState>(GetWorld()->GetGameState());
+	if (puck->TurnId < gameState->GlobalTurnCounter) return;
+	// otherwise force next turn/throw
 	Server_NewThrow();
-	//TODO: check for situation when other player manual trigger
-	//TODO: should reflect playmode on server (gamestate) to better react
+}
+
+void APlayerCtrl::RequestNewThrow()
+{
+	if (PlayMode == EPlayerCtrlMode::Setup) return;
+	Server_NewThrow();
 }
 
 bool APlayerCtrl::Server_NewThrow_Validate()
@@ -145,6 +154,8 @@ void APlayerCtrl::Client_NewThrow_Implementation()
 	Possess(new_puck);
 	new_puck->SetColor(GetPlayerState<AShufflPlayerState>()->Color);
 	new_puck->ThrowMode = EPuckThrowMode::Simple;
+	auto* gameState = Cast<AShufflGameState>(GetWorld()->GetGameState());
+	new_puck->TurnId = gameState->GlobalTurnCounter;
 	SpinAmount = 0.f;
 	SlingshotDir = FVector::ZeroVector;
 

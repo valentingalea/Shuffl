@@ -53,6 +53,7 @@ public:
 	float ThresholdToResting = 3.f;
 
 	EPuckThrowMode ThrowMode = EPuckThrowMode::Simple;
+	int TurnId = 0;
 
 	FVector2D Velocity = FVector2D::ZeroVector;
 	void ApplyThrow(FVector2D);

@@ -49,6 +49,9 @@ public:
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = Shuffl)
 	ERoundTurn RoundTurn = ERoundTurn::Player1;
 
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = Shuffl)
+	int GlobalTurnCounter = 0;
+
 	virtual void GetLifetimeReplicatedProps(TArray< FLifetimeProperty >&) const override;
 };
 

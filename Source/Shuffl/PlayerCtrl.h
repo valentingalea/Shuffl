@@ -83,11 +83,14 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Slingshot)
 	float SlingshotForceScaling = 5.f;
 
-	UFUNCTION(BlueprintCallable, Unreliable, Server, WithValidation)
+	UFUNCTION(BlueprintCallable)
+	void RequestNewThrow();
+
+	UFUNCTION(Unreliable, Server, WithValidation)
 	void Server_NewThrow();
 
-	UFUNCTION(BlueprintCallable, Client, Reliable)
-	void Client_NewThrow();
+	UFUNCTION(Client, Reliable)
+	void Client_NewThrow(); //TODO: possibly move more of this on on server
 
 	UFUNCTION(BlueprintCallable)
 	void SwitchToDetailView();
