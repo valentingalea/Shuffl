@@ -149,6 +149,20 @@ void APlayerCtrl::Client_NewThrow_Implementation()
 
 	const FVector location = StartingPoint;
 	APuck* new_puck = static_cast<APuck*>(GetWorld()->SpawnActor(PawnClass, &location));
+	if (!new_puck) { // if null most probably there is a previous one in the way
+		TArray<APuck*, TInlineAllocator<32>> pucks;
+		for (auto i = TActorIterator<APuck>(GetWorld()); i; ++i) {
+			pucks.Add(*i);
+		}
+		FBox killVol = SceneProps->KillingVolume->GetBounds().GetBox();
+		for (auto* i : pucks) {
+			FBox puckVol = i->GetBoundingBox();
+			if (killVol.Intersect(puckVol)) {
+				GetWorld()->DestroyActor(i);
+			}
+		}
+		new_puck = static_cast<APuck*>(GetWorld()->SpawnActor(PawnClass, &location));
+	}
 	make_sure(new_puck);
 
 	Possess(new_puck);
@@ -353,8 +367,6 @@ void APlayerCtrl::SwitchToDetailView()
 {
 	if (!SceneProps.IsValid()) return;
 	SetViewTargetWithBlend(SceneProps->DetailViewCamera, .5f);
-	
-	Client_EnterScoreCounting();
 }
 
 void APlayerCtrl::SwitchToPlayView()
@@ -362,61 +374,12 @@ void APlayerCtrl::SwitchToPlayView()
 	SetViewTargetWithBlend(GetPuck(), .25f);
 }
 
-#include "Algo/Sort.h"
-
-void APlayerCtrl::Client_EnterScoreCounting_Implementation() //TODO: these calculations should be on the Server
+void APlayerCtrl::Client_EnterScoreCounting_Implementation(EPuckColor winnerColor, int score)
 {
-	// get a list of the scoring areas
-	TArray<AScoringVolume *, TInlineAllocator<4>> volumes;
-	for (auto i = TActorIterator<AScoringVolume>(GetWorld()); i; ++i) {
-		volumes.Add(*i);
-	}
-
-	// get the pucks and sort them by closest to edge (by furthest X position)
-	TArray<APuck*, TInlineAllocator<32>> pucks;
-	for (auto i = TActorIterator<APuck>(GetWorld()); i; ++i) {
-		pucks.Add(*i);
-	}
-	Algo::Sort(pucks, [](APuck* p1, APuck* p2) {
-		return p1->GetActorLocation().X > p2->GetActorLocation().X;
-	});
-
-	auto GetPointsForPuck = [&volumes](APuck* p) {
-		for (AScoringVolume* vol : volumes) {
-			FBox scoreVol = vol->GetBounds().GetBox();
-			if (scoreVol.IsInside(p->GetActorLocation())) {
-				return vol->PointsAwarded;
-			}
-		}
-		return int(0);
-	};
-
-	// iterate on pucks and get their score
-	int totalScore = 0;
-	bool foundWinner = false;
-	EPuckColor winnerColor = EPuckColor::Red;
-	for (APuck* p : pucks) {
-		int score = GetPointsForPuck(p);
-
-		if (score > 0 && !foundWinner) {
-			foundWinner = true;
-			winnerColor = p->Color;
-			totalScore = score;
-			continue;
-		}
-
-		// only count the color of the winner if unobstructed by the other color pucks 
-		if (foundWinner) {
-			if (p->Color == winnerColor) {
-				totalScore += score;
-			} else {
-				break;
-			}
-		}
-	}
+	SwitchToDetailView();
 
 	auto sys = UGameSubSys::Get(this);
-	if (sys && totalScore) {
-		sys->ScoreChanged.Broadcast(winnerColor, totalScore);
+	if (sys && score) {
+		sys->ScoreChanged.Broadcast(winnerColor, score);
 	}
 }

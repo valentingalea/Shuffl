@@ -90,7 +90,7 @@ public:
 	void Server_NewThrow();
 
 	UFUNCTION(Client, Reliable)
-	void Client_NewThrow(); //TODO: possibly move more of this on on server
+	void Client_NewThrow(); //TODO: possibly move more of this on server
 
 	UFUNCTION(BlueprintCallable)
 	void SwitchToDetailView();
@@ -99,7 +99,7 @@ public:
 	void SwitchToPlayView();
 
 	UFUNCTION(Client, Reliable)
-	void Client_EnterScoreCounting();
+	void Client_EnterScoreCounting(EPuckColor winnerColor, int winnerScore);
 
 private:
 	virtual void BeginPlay() override;
@@ -110,9 +110,9 @@ private:
 	void OnPuckResting(APuck*);
 	void MovePuckOnTouchPosition(FVector2D);
 
-	void ConsumeTouchOn(const ETouchIndex::Type FingerIndex, const FVector Location);
-	void ConsumeTouchRepeat(const ETouchIndex::Type FingerIndex, const FVector Location);
-	void ConsumeTouchOff(const ETouchIndex::Type FingerIndex, const FVector Location);
+	void ConsumeTouchOn(const ETouchIndex::Type, const FVector);
+	void ConsumeTouchRepeat(const ETouchIndex::Type, const FVector);
+	void ConsumeTouchOff(const ETouchIndex::Type, const FVector);
 	TArray<FVector2D> TouchHistory;
 
 	TWeakObjectPtr<ASceneProps> SceneProps;

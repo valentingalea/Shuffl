@@ -47,9 +47,6 @@ class SHUFFL_API AShufflGameState : public AGameState
 
 public:
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = Shuffl)
-	ERoundTurn RoundTurn = ERoundTurn::Player1;
-
-	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = Shuffl)
 	int GlobalTurnCounter = 0;
 
 	virtual void GetLifetimeReplicatedProps(TArray< FLifetimeProperty >&) const override;
@@ -61,7 +58,10 @@ class SHUFFL_API AShufflCommonGameMode : public AGameMode
 	GENERATED_BODY()
 
 public:
-	virtual void NextTurn() {}
+	void SetupRound();
+	void CalculateRoundScore(EPuckColor &, int &);
+
+	virtual void NextTurn() { /*interface*/ }
 };
 
 UCLASS()
@@ -82,7 +82,7 @@ class SHUFFL_API AShuffl2PlayersGameMode : public AShufflCommonGameMode
 
 public:
 	virtual void HandleMatchIsWaitingToStart() override;
-	virtual void HandleMatchHasStarted() override;
+	virtual void StartMatch() override;
 
 	virtual void NextTurn() override;
 };

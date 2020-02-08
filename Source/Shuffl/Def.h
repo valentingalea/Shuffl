@@ -47,16 +47,17 @@ enum class EPlayerCtrlMode : uint8
 	Observe
 };
 
-UENUM(BlueprintType)
-enum class ERoundTurn : uint8
-{
-	Player1,
-	Player2,
-	CountingPoints
-};
-
 namespace ERound
 {
 	static constexpr uint8 PucksPerPlayer = 4;
 	static constexpr uint8 TotalThrows = PucksPerPlayer * 2;
+};
+
+namespace MatchState
+{
+	// all our new states are extensions of this default state
+	//extern ENGINE_API const FName InProgress;
+	extern const FName Round_Player1;
+	extern const FName Round_Player2;
+	extern const FName Round_End;
 };
