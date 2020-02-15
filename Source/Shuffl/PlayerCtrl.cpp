@@ -128,7 +128,7 @@ void APlayerCtrl::OnPuckResting(APuck *puck)
 
 void APlayerCtrl::RequestNewThrow()
 {
-	if (PlayMode == EPlayerCtrlMode::Setup) return;
+	if (PlayMode == EPlayerCtrlMode::Setup && GetPuck()) return;
 	Server_NewThrow();
 }
 
@@ -246,7 +246,7 @@ void APlayerCtrl::ConsumeTouchOff(const ETouchIndex::Type fingerIndex, const FVe
 	if (PlayMode == EPlayerCtrlMode::Observe) return;
 
 	GetPuck()->HideSlingshotPreview();
-	if (PlayMode == EPlayerCtrlMode::Slingshot && SlingshotDir.Size() > 10.f) {
+	if (PlayMode == EPlayerCtrlMode::Slingshot) {
 		DoSlingshot();
 		PlayMode = EPlayerCtrlMode::Observe;
 		return;
