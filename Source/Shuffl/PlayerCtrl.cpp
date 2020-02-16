@@ -23,6 +23,7 @@
 #include "GameFramework/PlayerState.h"
 #include "DrawDebugHelpers.h"
 #include "Math/UnrealMathUtility.h"
+#include "Components/ArrowComponent.h"
 
 #include "Shuffl.h"
 #include "GameSubSys.h"
@@ -147,6 +148,10 @@ void APlayerCtrl::Client_NewThrow_Implementation()
 //	ensure(GetLocalRole() != ROLE_Authority);
 	if (PlayMode == EPlayerCtrlMode::Spin) return;
 
+	if (SceneProps->ARTable) {
+		StartingPoint = static_cast<UArrowComponent*>(SceneProps->ARTable->
+			GetComponentByClass(UArrowComponent::StaticClass()))->GetComponentLocation();
+	}
 	const FVector location = StartingPoint;
 	APuck* new_puck = static_cast<APuck*>(GetWorld()->SpawnActor(PawnClass, &location));
 	if (!new_puck) { // if null most probably there is a previous one in the way
@@ -178,13 +183,19 @@ void APlayerCtrl::Client_NewThrow_Implementation()
 	if (auto sys = UGameSubSys::Get(this)) {
 		sys->PlayersChangeTurn.Broadcast(new_puck->Color);
 	}
+
+	if (SceneProps->ARTable) {
+		SwitchToDetailView();
+	}
 }
 
 static FHitResult TouchStartHitResult;
 
 void APlayerCtrl::ConsumeTouchOn(const ETouchIndex::Type fingerIndex, const FVector location)
 {
+	if (ARSetup) return;
 	make_sure(GetPuck());
+
 	if (fingerIndex != ETouchIndex::Touch1) {
 		GetPuck()->ThrowMode = EPuckThrowMode::WithSpin;
 		return;
@@ -208,7 +219,9 @@ void APlayerCtrl::ConsumeTouchOn(const ETouchIndex::Type fingerIndex, const FVec
 
 void APlayerCtrl::ConsumeTouchRepeat(const ETouchIndex::Type fingerIndex, const FVector location)
 {
+	if (ARSetup) return;
 	make_sure(GetPuck());
+
 	if (fingerIndex != ETouchIndex::Touch1) {
 		GetPuck()->ThrowMode = EPuckThrowMode::WithSpin;
 		return;
@@ -234,7 +247,9 @@ void APlayerCtrl::ConsumeTouchRepeat(const ETouchIndex::Type fingerIndex, const 
 
 void APlayerCtrl::ConsumeTouchOff(const ETouchIndex::Type fingerIndex, const FVector location)
 {
+	if (ARSetup) return;
 	make_sure(GetPuck());
+
 	if (fingerIndex != ETouchIndex::Touch1) return;
 
 	if (PlayMode == EPlayerCtrlMode::Spin) {
@@ -366,12 +381,12 @@ void APlayerCtrl::MovePuckOnTouchPosition(FVector2D touchLocation)
 void APlayerCtrl::SwitchToDetailView()
 {
 	if (!SceneProps.IsValid()) return;
-	SetViewTargetWithBlend(SceneProps->DetailViewCamera, .5f);
+	SetViewTargetWithBlend(SceneProps->DetailViewCamera, 0.f);
 }
 
 void APlayerCtrl::SwitchToPlayView()
 {
-	SetViewTargetWithBlend(GetPuck(), .25f);
+	SetViewTargetWithBlend(GetPuck(), 0.f);
 }
 
 void APlayerCtrl::Client_EnterScoreCounting_Implementation(EPuckColor winnerColor, int score)

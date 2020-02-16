@@ -117,7 +117,9 @@ void AShufflPracticeGameMode::HandleMatchHasStarted()
 {
 	Super::HandleMatchHasStarted();
 
-	NextTurn();
+	if (AutoTurnStart) {
+		NextTurn();
+	}
 }
 
 void AShufflPracticeGameMode::NextTurn()
@@ -152,7 +154,9 @@ void AShuffl2PlayersGameMode::StartMatch()
 	Super::StartMatch();
 
 	MatchState = MatchState::Round_End;
-	NextTurn();
+	if (AutoTurnStart) {
+		NextTurn();
+	}
 }
 
 void AShuffl2PlayersGameMode::NextTurn()

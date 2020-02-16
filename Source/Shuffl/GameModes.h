@@ -37,7 +37,7 @@ public:
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = Shuffl)
 	uint8 PucksToPlay = ERound::PucksPerPlayer;
 
-	virtual void GetLifetimeReplicatedProps(TArray< FLifetimeProperty >&) const override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty> &) const override;
 };
 
 UCLASS()
@@ -58,6 +58,9 @@ class SHUFFL_API AShufflCommonGameMode : public AGameMode
 	GENERATED_BODY()
 
 public:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Shuffl)
+	bool AutoTurnStart = true;
+
 	void SetupRound();
 	void CalculateRoundScore(EPuckColor &, int &);
 

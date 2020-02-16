@@ -39,6 +39,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = PlayerCtrl)
 	class AKillingVolume* KillingVolume;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = AR)
+	AActor* ARTable;
 };
 
 UCLASS(hidecategories = (Actor, "Actor Tick", Input, Game, "Mouse Interface", "Cheat Manager", LOD, Cooking))
@@ -48,6 +51,9 @@ class SHUFFL_API APlayerCtrl : public APlayerController
 
 public:
 	APlayerCtrl();
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Setup)
+	bool ARSetup = false;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Setup)
 	UClass* PawnClass;
