@@ -76,8 +76,10 @@ void APlayerCtrl::BeginPlay()
 
 		StartingPoint = SceneProps->StartingPoint->GetActorLocation();
 
-		if (auto sys = UGameSubSys::Get(this)) {
-			sys->PuckResting.AddUObject(this, &APlayerCtrl::OnPuckResting);
+		if (HasAuthority()) { // move this off PC and to puck then RPC to game
+			if (auto sys = UGameSubSys::Get(this)) {
+				sys->PuckResting.AddUObject(this, &APlayerCtrl::OnPuckResting);
+			}
 		}
 	}
 
@@ -109,7 +111,7 @@ void APlayerCtrl::OnQuit()
 
 void APlayerCtrl::OnPuckResting(APuck *puck)
 {
-	make_sure(puck);
+	make_sure(puck && HasAuthority());
 	if (puck->Color != GetPlayerState<AShufflPlayerState>()->Color) return;
 
 	FBox killVol = SceneProps->KillingVolume->GetBounds().GetBox();
@@ -119,39 +121,42 @@ void APlayerCtrl::OnPuckResting(APuck *puck)
 	}
 
 	// abort if player changed mode on his own
-	if (PlayMode != EPlayerCtrlMode::Observe) return;
+//	if (PlayMode != EPlayerCtrlMode::Observe) return;
 	// abort if next turn already happened
 	auto* gameState = Cast<AShufflGameState>(GetWorld()->GetGameState());
 	if (puck->TurnId < gameState->GlobalTurnCounter) return;
 	// otherwise force next turn/throw
-	Server_NewThrow();
+	RPC_NewThrow();
 }
 
 void APlayerCtrl::RequestNewThrow()
 {
+	//TODO: check it can only be requested from clients
 	if (PlayMode == EPlayerCtrlMode::Setup && GetPuck()) return;
-	Server_NewThrow();
+	if (PlayMode == EPlayerCtrlMode::Spin) return;
+
+	RPC_NewThrow();
 }
 
-bool APlayerCtrl::Server_NewThrow_Validate()
+bool APlayerCtrl::RPC_NewThrow_Validate()
 {
 	return true;
 }
 
-void APlayerCtrl::Server_NewThrow_Implementation()
+void APlayerCtrl::RPC_NewThrow_Implementation()
 {
 	GetWorld()->GetAuthGameMode<AShufflCommonGameMode>()->NextTurn();
 }
 
-void APlayerCtrl::Client_NewThrow_Implementation()
+void APlayerCtrl::Server_NewThrow()
 {
-//	ensure(GetLocalRole() != ROLE_Authority);
-	if (PlayMode == EPlayerCtrlMode::Spin) return;
+	make_sure(HasAuthority());
 
-	if (SceneProps->ARTable) {
+	if (SceneProps->ARTable) {  //HACK: AR
 		StartingPoint = static_cast<UArrowComponent*>(SceneProps->ARTable->
 			GetComponentByClass(UArrowComponent::StaticClass()))->GetComponentLocation();
 	}
+
 	const FVector location = StartingPoint;
 	APuck* new_puck = static_cast<APuck*>(GetWorld()->SpawnActor(PawnClass, &location));
 	if (!new_puck) { // if null most probably there is a previous one in the way
@@ -171,21 +176,51 @@ void APlayerCtrl::Client_NewThrow_Implementation()
 	make_sure(new_puck);
 
 	Possess(new_puck);
-	new_puck->SetColor(GetPlayerState<AShufflPlayerState>()->Color);
+	new_puck->Color = GetPlayerState<AShufflPlayerState>()->Color;
 	new_puck->ThrowMode = EPuckThrowMode::Simple;
 	auto* gameState = Cast<AShufflGameState>(GetWorld()->GetGameState());
 	new_puck->TurnId = gameState->GlobalTurnCounter;
+
+//	Client_NewThrow();
+	//for (auto i = GetWorld()->GetPlayerControllerIterator(); i; ++i) {
+	//	auto* ctrl = Cast<APlayerCtrl>(*i);
+	//	if (ctrl != this) {
+	//		ctrl->Client_ObserveThrow(new_puck->TurnId);
+	//		break;
+	//	}
+	//}
+}
+
+void APlayerCtrl::Client_NewThrow_Implementation()
+{
+//	make_sure(GetPuck());
+//	GetPuck()->SetColor(GetPuck()->Color);
+
 	SpinAmount = 0.f;
 	SlingshotDir = FVector::ZeroVector;
 
 	PlayMode = EPlayerCtrlMode::Setup;
 
 	if (auto sys = UGameSubSys::Get(this)) {
-		sys->PlayersChangeTurn.Broadcast(new_puck->Color);
+//		sys->PlayersChangeTurn.Broadcast(GetPuck()->Color);
 	}
 
-	if (SceneProps->ARTable) {
+	if (SceneProps->ARTable) {  //HACK: AR
 		SwitchToDetailView();
+	}
+}
+
+void APlayerCtrl::Client_ObserveThrow(int puckTurnId)
+{
+	PlayMode = EPlayerCtrlMode::Observe;
+
+	// find the puck to focus on (the one with the current turn id)
+	for (auto i = TActorIterator<APuck>(GetWorld()); i; ++i) {
+		auto* puck = Cast<APuck>(*i);
+		if (puck->TurnId == puckTurnId) {
+			SetViewTargetWithBlend(puck, 0.f);
+			break;
+		}
 	}
 }
 

@@ -30,9 +30,6 @@ class SHUFFL_API APuck : public APawn
 public:
 	APuck();
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Setup)
-	EPuckColor Color = EPuckColor::Red;
-
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = Setup)
 	UClass* PuckMeshClass;
 
@@ -52,7 +49,13 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Debug)
 	float ThresholdToResting = 3.f;
 
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = Throw)
+	EPuckColor Color = EPuckColor::Red;
+
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = Throw)
 	EPuckThrowMode ThrowMode = EPuckThrowMode::Simple;
+
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = Throw)
 	int TurnId = 0;
 
 	FVector2D Velocity = FVector2D::ZeroVector;
@@ -72,7 +75,9 @@ public:
 
 private:
 	virtual void Tick(float DeltaTime) override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty> &) const override;
 
 	EPuckState State = EPuckState::Setup;
 	float Lifetime = 0.f; // since it started Traveling (in sec)
+	bool Setup = false;
 };

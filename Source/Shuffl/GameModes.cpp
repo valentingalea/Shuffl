@@ -23,6 +23,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Algo/Sort.h"
 
+#include "Shuffl.h"
 #include "Puck.h"
 #include "PlayerCtrl.h"
 #include "ScoringVolume.h"
@@ -126,7 +127,7 @@ void AShufflPracticeGameMode::NextTurn()
 {
 	auto iterator = GetWorld()->GetPlayerControllerIterator(); 
 	auto* controller = Cast<APlayerCtrl>(*iterator);
-	controller->Client_NewThrow();
+	controller->Server_NewThrow();
 }
 
 void AShuffl2PlayersGameMode::HandleMatchIsWaitingToStart()
@@ -209,5 +210,83 @@ void AShuffl2PlayersGameMode::NextTurn()
 	SetMatchState(desiredState);
 
 	curr_player->Player->SwitchController(next_player);
+	next_player->Server_NewThrow();
+}
+
+void AShufflNetworkGameMode::PostLogin(APlayerController *new_player)
+{
+	Super::PostLogin(new_player);
+
+	if (NumPlayers <= 1) {
+		P1 = static_cast<decltype(P1)>(new_player);
+		P1->GetPlayerState<AShufflPlayerState>()->Color = EPuckColor::Red;
+	} else {
+		P2 = static_cast<decltype(P2)>(new_player);
+		P2->GetPlayerState<AShufflPlayerState>()->Color = EPuckColor::Blue;
+	}
+}
+
+void AShufflNetworkGameMode::StartMatch()
+{
+	Super::StartMatch();
+
+	MatchState = MatchState::Round_End;
+	if (AutoTurnStart) {
+		NextTurn();
+	}
+}
+
+void AShufflNetworkGameMode::NextTurn()
+{
+	make_sure(P1 && P2);
+
+	APlayerCtrl *next_player, *prev_player;
+	decltype(MatchState) desiredState;
+
+	if (GetMatchState() == MatchState::Round_Player1) {
+		desiredState = MatchState::Round_Player2;
+		prev_player = P1;
+		next_player = P2;
+	} else { // P2 or Round_End
+		if (GetMatchState() == MatchState::Round_End) {
+			SetupRound();
+		}
+		desiredState = MatchState::Round_Player1;
+		prev_player = P2;
+		next_player = P1;
+	}
+
+	auto* prev_player_state = prev_player->GetPlayerState<AShufflPlayerState>();
+	auto* next_player_state = next_player->GetPlayerState<AShufflPlayerState>();
+	int totalScore = int(prev_player_state->Score) + int(next_player_state->Score);
+	if (totalScore == 21) {
+		EndMatch(); //TODO: manage properly end of match
+		return;
+	}
+	if ((prev_player_state->PucksToPlay + next_player_state->PucksToPlay) == 0) {
+		SetMatchState(MatchState::Round_End);
+
+		prev_player_state->PucksToPlay = ERound::PucksPerPlayer;
+		next_player_state->PucksToPlay = ERound::PucksPerPlayer;
+
+		EPuckColor winner_color;
+		int winner_score;
+		CalculateRoundScore(winner_color, winner_score);
+		AShufflPlayerState* winner_player = winner_color == prev_player_state->Color ?
+			prev_player_state : next_player_state;
+		winner_player->Score += winner_score;
+		prev_player->Client_EnterScoreCounting(winner_color, winner_player->Score);
+		next_player->Client_EnterScoreCounting(winner_color, winner_player->Score); //DIFF
+
+		return;
+	}
+
+	next_player_state->PucksToPlay--;
+	auto* game_state = GetGameState<AShufflGameState>();
+	game_state->GlobalTurnCounter++;
+	SetMatchState(desiredState);
+
+	//curr_player->Player->SwitchController(next_player); DIFF
+	next_player->Server_NewThrow();
 	next_player->Client_NewThrow();
 }

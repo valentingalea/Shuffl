@@ -22,9 +22,11 @@
 #include "Components/StaticMeshComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Components/ArrowComponent.h"
+#include "Net/UnrealNetwork.h"
 
 #include "Shuffl.h"
 #include "GameSubSys.h"
+#include "PlayerCtrl.h"
 
 // Sets default values
 APuck::APuck()
@@ -64,6 +66,15 @@ APuck::APuck()
 	PrimaryActorTick.bCanEverTick = true;
 }
 
+void APuck::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(APuck, Color);
+	DOREPLIFETIME(APuck, ThrowMode); // just for initial setup, the client side will keep modifying it
+	DOREPLIFETIME(APuck, TurnId);
+}
+
 void APuck::ApplyThrow(FVector2D force)
 {
 	Velocity = force;
@@ -71,7 +82,7 @@ void APuck::ApplyThrow(FVector2D force)
 	State = EPuckState::Traveling;
 }
 
-inline UStaticMeshComponent* FindCap(EPuckColor color, AActor* parent)
+inline UStaticMeshComponent* FindCap(EPuckColor color, AActor* parent) //TODO: move to blueprint OnBeginPlay
 {
 	auto name = color == EPuckColor::Red ? "Puck_Cap_Red" : "Puck_Cap_Blue"; //TODO: better way of identify
 	TInlineComponentArray<UStaticMeshComponent*> compList(parent);
@@ -86,7 +97,7 @@ void APuck::SetColor(EPuckColor newColor)
 	auto prev = newColor == EPuckColor::Red ? EPuckColor::Blue : EPuckColor::Red;
 	auto mesh = FindCap(prev, this);
 	mesh->SetHiddenInGame(true);
-	Color = newColor;
+//	Color = newColor;
 }
 
 void APuck::PreviewSpin(float spinAmount)
@@ -133,6 +144,13 @@ FBox APuck::GetBoundingBox()
 
 void APuck::Tick(float deltaTime)
 {
+	//TODO: decide where to tick: locally or server, currently both
+	if (TurnId > 0 && Role == ROLE_SimulatedProxy && !Setup) {
+		SetColor(Color);
+		Cast<APlayerCtrl>(UGameplayStatics::GetPlayerController(GetWorld(), 0))->Client_ObserveThrow(TurnId);
+		Setup = true;
+		return;
+	}
 	if (State != EPuckState::Traveling) return;
 
 	Lifetime += deltaTime;

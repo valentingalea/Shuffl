@@ -25,6 +25,7 @@ enum class EPuckState : uint8
 	Resting
 };
 
+UENUM()
 enum class EPuckThrowMode : uint8
 {
 	Simple,

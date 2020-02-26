@@ -89,3 +89,18 @@ public:
 
 	virtual void NextTurn() override;
 };
+
+UCLASS()
+class SHUFFL_API AShufflNetworkGameMode : public AShufflCommonGameMode
+{
+	GENERATED_BODY()
+
+public:
+	virtual void PostLogin(APlayerController*);
+	virtual void StartMatch() override;
+
+	virtual void NextTurn() override;
+
+private:
+	class APlayerCtrl *P1, *P2;
+};

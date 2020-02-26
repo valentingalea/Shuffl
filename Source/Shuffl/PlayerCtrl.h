@@ -53,7 +53,7 @@ public:
 	APlayerCtrl();
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Setup)
-	bool ARSetup = false;
+	bool ARSetup = false; //HACK: AR
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Setup)
 	UClass* PawnClass;
@@ -93,10 +93,15 @@ public:
 	void RequestNewThrow();
 
 	UFUNCTION(Unreliable, Server, WithValidation)
+	void RPC_NewThrow();
+
 	void Server_NewThrow();
 
 	UFUNCTION(Client, Reliable)
-	void Client_NewThrow(); //TODO: possibly move more of this on server
+	void Client_NewThrow();
+
+	//UFUNCTION(Client, Reliable)
+	void Client_ObserveThrow(int puckTurnId);
 
 	UFUNCTION(BlueprintCallable)
 	void SwitchToDetailView();
