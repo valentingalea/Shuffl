@@ -23,7 +23,7 @@
 #include "GameSubSys.generated.h"
 
 // only handled in C++
-DECLARE_MULTICAST_DELEGATE_OneParam(FEvent_PuckResting, class APuck *);
+DECLARE_MULTICAST_DELEGATE_OneParam(FEvent_PuckReplicated, int);
 
 // handled in C++/Blueprint
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FEvent_ScoreChanged, EPuckColor, WinnerColor, int, NewScoreValue);
@@ -37,11 +37,32 @@ class UGameSubSys : public UGameInstanceSubsystem
 public:
 	static UGameSubSys* Get(const UObject* ContextObject);
 
-	FEvent_PuckResting PuckResting;
+	FEvent_PuckReplicated PuckReplicated;
 
 	UPROPERTY(BlueprintAssignable)
 	FEvent_ScoreChanged ScoreChanged;
 
 	UPROPERTY(BlueprintAssignable)
 	FEvent_PlayersChangeTurn PlayersChangeTurn;
+};
+
+UCLASS(hidecategories = (Rendering, Replication, Collision, Input, Actor, LOD, Cooking))
+class ASceneProps : public AActor
+{
+	GENERATED_BODY()
+
+public:
+	ASceneProps();
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = PlayerCtrl)
+	class APlayerStart* StartingPoint;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = PlayerCtrl)
+	class ACameraActor* DetailViewCamera;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = PlayerCtrl)
+	class AKillingVolume* KillingVolume;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = AR)
+	AActor* ARTable;
 };

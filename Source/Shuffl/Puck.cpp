@@ -15,6 +15,7 @@
 
 #include "Puck.h"
 
+#include "EngineUtils.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Camera/CameraComponent.h"
 #include "Camera/CameraActor.h"
@@ -26,7 +27,8 @@
 
 #include "Shuffl.h"
 #include "GameSubSys.h"
-#include "PlayerCtrl.h"
+#include "GameModes.h"
+#include "ScoringVolume.h"
 
 // Sets default values
 APuck::APuck()
@@ -66,6 +68,11 @@ APuck::APuck()
 	PrimaryActorTick.bCanEverTick = true;
 }
 
+void APuck::BeginPlay()
+{
+	Super::BeginPlay();
+}
+
 void APuck::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
@@ -78,11 +85,21 @@ void APuck::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimePro
 void APuck::ApplyThrow(FVector2D force)
 {
 	Velocity = force;
-	ThePuck->AddImpulse(FVector(force.X, force.Y, 0));
+	RPC_ApplyThrow(force);
 	State = EPuckState::Traveling;
 }
 
-inline UStaticMeshComponent* FindCap(EPuckColor color, AActor* parent) //TODO: move to blueprint OnBeginPlay
+void APuck::RPC_ApplyThrow_Implementation(FVector2D force)
+{
+	ThePuck->AddImpulse(FVector(force.X, force.Y, 0));
+}
+
+bool APuck::RPC_ApplyThrow_Validate(FVector2D force)
+{
+	return true;
+}
+
+inline UStaticMeshComponent* FindCap(EPuckColor color, AActor* parent)
 {
 	auto name = color == EPuckColor::Red ? "Puck_Cap_Red" : "Puck_Cap_Blue"; //TODO: better way of identify
 	TInlineComponentArray<UStaticMeshComponent*> compList(parent);
@@ -129,10 +146,20 @@ void APuck::ApplySpin(float spinAmount)
 
 void APuck::MoveTo(FVector location)
 {
+	RPC_MoveTo(location);
+	State = EPuckState::Setup;
+}
+
+void APuck::RPC_MoveTo_Implementation(FVector location)
+{
 	ThePuck->SetWorldLocationAndRotation(location, FRotator::ZeroRotator,
 		false/*sweep*/, nullptr/*hit result*/,
 		ETeleportType::TeleportPhysics); //NOTE: ResetPhysics causes problems
-	State = EPuckState::Setup;
+}
+
+bool APuck::RPC_MoveTo_Validate(FVector location)
+{
+	return true;
 }
 
 FBox APuck::GetBoundingBox()
@@ -144,12 +171,13 @@ FBox APuck::GetBoundingBox()
 
 void APuck::Tick(float deltaTime)
 {
-	//TODO: decide where to tick: locally or server, currently both
-	if (TurnId > 0 && Role == ROLE_SimulatedProxy && !Setup) {
+	if (TurnId > 0 && !Replicated) {
 		SetColor(Color);
-		Cast<APlayerCtrl>(UGameplayStatics::GetPlayerController(GetWorld(), 0))->Client_ObserveThrow(TurnId);
-		Setup = true;
-		return;
+
+		auto* sys = UGameSubSys::Get(this);
+		sys->PuckReplicated.Broadcast(TurnId);
+
+		Replicated = true;
 	}
 	if (State != EPuckState::Traveling) return;
 
@@ -163,10 +191,32 @@ void APuck::Tick(float deltaTime)
 
 	if ((vel.SizeSquared() < .0001f) && Lifetime > ThresholdToResting) {
 		State = EPuckState::Resting;
-		if (auto sys = UGameSubSys::Get(this)) {
-			sys->PuckResting.Broadcast(this);
-		}
+		RPC_OnPuckResting();
 	}
+}
+
+void APuck::RPC_OnPuckResting_Implementation()
+{
+	auto iter = TActorIterator<ASceneProps>(GetWorld());
+	make_sure(*iter);
+	auto *SceneProps = Cast<ASceneProps>(*iter);
+
+	FBox killVol = SceneProps->KillingVolume->GetBounds().GetBox();
+	FBox puckVol = GetBoundingBox();
+	if (killVol.Intersect(puckVol)) {
+		Destroy();
+	}
+
+	// abort if next turn already happened
+	auto* gameState = Cast<AShufflGameState>(GetWorld()->GetGameState());
+	if (TurnId < gameState->GlobalTurnCounter) return;
+	// otherwise force next turn/throw
+	GetWorld()->GetAuthGameMode<AShufflCommonGameMode>()->NextTurn();
+}
+
+bool APuck::RPC_OnPuckResting_Validate()
+{
+	return true;
 }
 
 void APuck::ShowSlingshotPreview(FVector rot, FColor color)

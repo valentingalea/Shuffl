@@ -23,27 +23,6 @@
 
 #include "PlayerCtrl.generated.h"
 
-UCLASS(hidecategories = (Rendering, Replication, Collision, Input, Actor, LOD, Cooking))
-class ASceneProps : public AActor
-{
-	GENERATED_BODY()
-
-public:
-	ASceneProps();
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = PlayerCtrl)
-	class APlayerStart* StartingPoint;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = PlayerCtrl)
-	class ACameraActor* DetailViewCamera;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = PlayerCtrl)
-	class AKillingVolume* KillingVolume;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = AR)
-	AActor* ARTable;
-};
-
 UCLASS(hidecategories = (Actor, "Actor Tick", Input, Game, "Mouse Interface", "Cheat Manager", LOD, Cooking))
 class SHUFFL_API APlayerCtrl : public APlayerController
 {
@@ -100,7 +79,6 @@ public:
 	UFUNCTION(Client, Reliable)
 	void Client_NewThrow();
 
-	//UFUNCTION(Client, Reliable)
 	void Client_ObserveThrow(int puckTurnId);
 
 	UFUNCTION(BlueprintCallable)
@@ -118,7 +96,6 @@ private:
 	void OnQuit();
 
 	APuck* GetPuck();
-	void OnPuckResting(APuck*);
 	void MovePuckOnTouchPosition(FVector2D);
 
 	void ConsumeTouchOn(const ETouchIndex::Type, const FVector);
@@ -126,7 +103,7 @@ private:
 	void ConsumeTouchOff(const ETouchIndex::Type, const FVector);
 	TArray<FVector2D> TouchHistory;
 
-	TWeakObjectPtr<ASceneProps> SceneProps;
+	TWeakObjectPtr<class ASceneProps> SceneProps;
 	EPlayerCtrlMode PlayMode = EPlayerCtrlMode::Setup;
 
 //
@@ -157,6 +134,6 @@ private:
 
 inline APuck* APlayerCtrl::GetPuck()
 {
-	ensure(GetPawn() && !GetPawn()->IsPendingKill());
+//	ensure(GetPawn() && !GetPawn()->IsPendingKill());
 	return GetPawn<APuck>();
 }

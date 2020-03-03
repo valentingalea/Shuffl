@@ -48,10 +48,11 @@ inline FHitResult ProjectScreenPoint(const APlayerCtrl *ctrl, const FVector2D& l
 	return hitResult;
 }
 
-ASceneProps::ASceneProps()
+inline void BroadcastChangeTurn(APlayerCtrl* PC, EPuckColor colorInPlay)
 {
-	auto root = CreateDefaultSubobject<USceneComponent>(TEXT("Dummy"));
-	RootComponent = root;
+	if (auto sys = UGameSubSys::Get(PC)) {
+		sys->PlayersChangeTurn.Broadcast(colorInPlay);
+	}
 }
 
 APlayerCtrl::APlayerCtrl()
@@ -75,12 +76,10 @@ void APlayerCtrl::BeginPlay()
 		make_sure(SceneProps->KillingVolume);
 
 		StartingPoint = SceneProps->StartingPoint->GetActorLocation();
+	}
 
-		if (HasAuthority()) { // move this off PC and to puck then RPC to game
-			if (auto sys = UGameSubSys::Get(this)) {
-				sys->PuckResting.AddUObject(this, &APlayerCtrl::OnPuckResting);
-			}
-		}
+	if (auto *sys = UGameSubSys::Get(this)) {
+		sys->PuckReplicated.AddUObject(this, &APlayerCtrl::Client_ObserveThrow);
 	}
 
 	TouchHistory.Reserve(64);
@@ -109,29 +108,10 @@ void APlayerCtrl::OnQuit()
 	FPlatformMisc::RequestExit(false);
 }
 
-void APlayerCtrl::OnPuckResting(APuck *puck)
-{
-	make_sure(puck && HasAuthority());
-	if (puck->Color != GetPlayerState<AShufflPlayerState>()->Color) return;
-
-	FBox killVol = SceneProps->KillingVolume->GetBounds().GetBox();
-	FBox puckVol = puck->GetBoundingBox();
-	if (killVol.Intersect(puckVol)) {
-		puck->Destroy();
-	}
-
-	// abort if player changed mode on his own
-//	if (PlayMode != EPlayerCtrlMode::Observe) return;
-	// abort if next turn already happened
-	auto* gameState = Cast<AShufflGameState>(GetWorld()->GetGameState());
-	if (puck->TurnId < gameState->GlobalTurnCounter) return;
-	// otherwise force next turn/throw
-	RPC_NewThrow();
-}
-
 void APlayerCtrl::RequestNewThrow()
 {
 	//TODO: check it can only be requested from clients
+	//TODO: move it from here and make it independent of PC index
 	if (PlayMode == EPlayerCtrlMode::Setup && GetPuck()) return;
 	if (PlayMode == EPlayerCtrlMode::Spin) return;
 
@@ -175,35 +155,27 @@ void APlayerCtrl::Server_NewThrow()
 	}
 	make_sure(new_puck);
 
-	Possess(new_puck);
 	new_puck->Color = GetPlayerState<AShufflPlayerState>()->Color;
 	new_puck->ThrowMode = EPuckThrowMode::Simple;
 	auto* gameState = Cast<AShufflGameState>(GetWorld()->GetGameState());
 	new_puck->TurnId = gameState->GlobalTurnCounter;
 
-//	Client_NewThrow();
-	//for (auto i = GetWorld()->GetPlayerControllerIterator(); i; ++i) {
-	//	auto* ctrl = Cast<APlayerCtrl>(*i);
-	//	if (ctrl != this) {
-	//		ctrl->Client_ObserveThrow(new_puck->TurnId);
-	//		break;
-	//	}
-	//}
+	Possess(new_puck);
+
+	Client_NewThrow();
 }
 
 void APlayerCtrl::Client_NewThrow_Implementation()
 {
-//	make_sure(GetPuck());
-//	GetPuck()->SetColor(GetPuck()->Color);
+	//NOTE: not guaranteed to posses the pawn/puck by this point
 
 	SpinAmount = 0.f;
 	SlingshotDir = FVector::ZeroVector;
 
 	PlayMode = EPlayerCtrlMode::Setup;
 
-	if (auto sys = UGameSubSys::Get(this)) {
-//		sys->PlayersChangeTurn.Broadcast(GetPuck()->Color);
-	}
+	auto colorInPlay = GetPlayerState<AShufflPlayerState>()->Color;
+	BroadcastChangeTurn(this, colorInPlay);
 
 	if (SceneProps->ARTable) {  //HACK: AR
 		SwitchToDetailView();
@@ -212,16 +184,21 @@ void APlayerCtrl::Client_NewThrow_Implementation()
 
 void APlayerCtrl::Client_ObserveThrow(int puckTurnId)
 {
-	PlayMode = EPlayerCtrlMode::Observe;
+	if (GetPuck()) return; // abort if we're playing
 
 	// find the puck to focus on (the one with the current turn id)
 	for (auto i = TActorIterator<APuck>(GetWorld()); i; ++i) {
 		auto* puck = Cast<APuck>(*i);
 		if (puck->TurnId == puckTurnId) {
 			SetViewTargetWithBlend(puck, 0.f);
-			break;
+			PlayMode = EPlayerCtrlMode::Observe;
+			BroadcastChangeTurn(this, puck->Color);
+
+			return;
 		}
 	}
+
+	ensure(0);// why made it here?
 }
 
 static FHitResult TouchStartHitResult;

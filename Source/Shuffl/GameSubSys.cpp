@@ -15,7 +15,8 @@
 
 #include "GameSubSys.h"
 #include "Engine.h"
-#include "Engine\GameInstance.h"
+#include "Engine/GameInstance.h"
+#include "Components/SceneComponent.h"
 
 UGameSubSys* UGameSubSys::Get(const UObject* ContextObject)
 {
@@ -25,4 +26,10 @@ UGameSubSys* UGameSubSys::Get(const UObject* ContextObject)
 	}
 
 	return nullptr;
+}
+
+ASceneProps::ASceneProps()
+{
+	auto root = CreateDefaultSubobject<USceneComponent>(TEXT("Dummy"));
+	RootComponent = root;
 }

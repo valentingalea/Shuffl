@@ -288,5 +288,4 @@ void AShufflNetworkGameMode::NextTurn()
 
 	//curr_player->Player->SwitchController(next_player); DIFF
 	next_player->Server_NewThrow();
-	next_player->Client_NewThrow();
 }

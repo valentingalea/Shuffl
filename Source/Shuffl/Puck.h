@@ -61,6 +61,8 @@ public:
 	FVector2D Velocity = FVector2D::ZeroVector;
 	void ApplyThrow(FVector2D);
 	void MoveTo(FVector);
+	UFUNCTION(Unreliable, Server, WithValidation) void RPC_ApplyThrow(FVector2D f);
+	UFUNCTION(Unreliable, Server, WithValidation) void RPC_MoveTo(FVector v);
 	void SetColor(EPuckColor);
 
 	void ApplySpin(float);
@@ -74,10 +76,13 @@ public:
 	FBox GetBoundingBox(); // will return just the puck component not the auxiliary elements
 
 private:
+	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty> &) const override;
 
+	UFUNCTION(Unreliable, Server, WithValidation) void RPC_OnPuckResting();
+
 	EPuckState State = EPuckState::Setup;
 	float Lifetime = 0.f; // since it started Traveling (in sec)
-	bool Setup = false;
+	bool Replicated = false;
 };
