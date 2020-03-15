@@ -17,6 +17,7 @@
 
 #include "CoreMinimal.h"
 #include "Engine\Public\Subsystems\GameInstanceSubsystem.h"
+#include "Engine\Classes\GameFramework\Actor.h"
 
 #include "Def.h"
 
