@@ -198,14 +198,16 @@ void AShuffl2PlayersGameMode::NextTurn()
 		AShufflPlayerState* winner_player = winner_color == curr_player_state->Color ?
 			curr_player_state : next_player_state;
 		winner_player->Score += winner_score;
- 		curr_player->Client_EnterScoreCounting(winner_color, winner_player->Score);
-		
+		curr_player->Client_EnterScoreCounting(winner_color, winner_player->Score);
+
 		return;
 	}
 
 	next_player_state->PucksToPlay--;
 	auto* game_state = GetGameState<AShufflGameState>();
 	game_state->GlobalTurnCounter++;
+	game_state->ActiveLocalPlayerCtrlIndex = 
+		desiredState == MatchState::Round_Player1 ? 0 : 1;
 	SetMatchState(desiredState);
 
 	curr_player->Player->SwitchController(next_player);

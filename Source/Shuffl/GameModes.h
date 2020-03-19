@@ -49,7 +49,10 @@ public:
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = Shuffl)
 	int GlobalTurnCounter = 0;
 
-	virtual void GetLifetimeReplicatedProps(TArray< FLifetimeProperty >&) const override;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Shuffl)
+	int ActiveLocalPlayerCtrlIndex = 0;
+
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty> &) const override;
 };
 
 UCLASS()

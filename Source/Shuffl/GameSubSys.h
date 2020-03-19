@@ -44,4 +44,7 @@ public:
 
 	UPROPERTY(BlueprintAssignable)
 	FEvent_PlayersChangeTurn PlayersChangeTurn;
+
+	UFUNCTION(BlueprintPure, meta = (WorldContext = "WorldContextObject", UnsafeDuringActorConstruction = "true"))
+	static class APlayerController* ShufflGetActivePlayerCtrl(const UObject* WorldContextObject);
 };

@@ -394,7 +394,7 @@ void APlayerCtrl::Client_EnterScoreCounting_Implementation(EPuckColor winnerColo
 	SwitchToDetailView();
 
 	auto sys = UGameSubSys::Get(this);
-	if (sys && score) {
+	if (sys) {
 		sys->ScoreChanged.Broadcast(winnerColor, score);
 	}
 }

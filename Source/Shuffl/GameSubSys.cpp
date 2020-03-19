@@ -17,6 +17,8 @@
 #include "Engine.h"
 #include "Engine\GameInstance.h"
 
+#include "GameModes.h"
+
 UGameSubSys* UGameSubSys::Get(const UObject* ContextObject)
 {
 	if (UWorld* World = GEngine->GetWorldFromContextObject(ContextObject, 
@@ -24,5 +26,23 @@ UGameSubSys* UGameSubSys::Get(const UObject* ContextObject)
 		return UGameInstance::GetSubsystem<UGameSubSys>(World->GetGameInstance());
 	}
 
+	return nullptr;
+}
+
+class APlayerController* UGameSubSys::ShufflGetActivePlayerCtrl(const UObject* WorldContextObject)
+{
+	if (UWorld* World = GEngine->GetWorldFromContextObject(WorldContextObject, 
+		EGetWorldErrorMode::LogAndReturnNull))
+	{
+		auto it = World->GetPlayerControllerIterator();
+		auto *game_state = World->GetGameState<AShufflGameState>();
+
+		if (game_state->ActiveLocalPlayerCtrlIndex == 0) {
+			return it->Get();
+		} else {
+			it++;
+			return it->Get();
+		}
+	}
 	return nullptr;
 }
