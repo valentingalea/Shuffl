@@ -123,6 +123,9 @@ void APlayerCtrl::OnPuckResting(APuck *puck)
 	// abort if next turn already happened
 	auto* gameState = Cast<AShufflGameState>(GetWorld()->GetGameState());
 	if (puck->TurnId < gameState->GlobalTurnCounter) return;
+	// abort if we're showing the end of round results - next one needs to be manual
+	if (gameState->GetMatchState() == MatchState::Round_End) return;
+
 	// otherwise force next turn/throw
 	Server_NewThrow();
 }
