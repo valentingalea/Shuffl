@@ -49,15 +49,16 @@ enum class EPlayerCtrlMode : uint8
 
 namespace ERound
 {
-	static constexpr uint8 PucksPerPlayer = 4;
-	static constexpr uint8 TotalThrows = PucksPerPlayer * 2;
+	static constexpr int PucksPerPlayer = 4;
+	static constexpr int TotalThrows = PucksPerPlayer * 2;
+	static constexpr int WinningScore = 21;
 };
 
 namespace MatchState
 {
-	// all our new states are extensions of this default state
-	//extern ENGINE_API const FName InProgress;
+	// all our new states are extensions of this state: `AGameMode::MatchState::InProgress`
 	extern const FName Round_Player1;
 	extern const FName Round_Player2;
 	extern const FName Round_End;
+	extern const FName Round_WinnerDeclared;
 };

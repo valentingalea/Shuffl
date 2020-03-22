@@ -26,12 +26,14 @@
 #include "Puck.h"
 #include "PlayerCtrl.h"
 #include "ScoringVolume.h"
+#include "GameSubSys.h"
 
 namespace MatchState
 {
 	const FName Round_Player1 = TEXT("Round_P1");
 	const FName Round_Player2 = TEXT("Round_P2");
 	const FName Round_End = TEXT("Round_End");
+	const FName Round_WinnerDeclared = TEXT("Round_Winner");
 };
 
 void AShufflPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -58,6 +60,14 @@ void AShufflCommonGameMode::SetupRound()
 	}
 	for (auto* i : pucks) {
 		GetWorld()->DestroyActor(i);
+	}
+
+	// reset scores after a winning round
+	if (GetMatchState() == MatchState::Round_WinnerDeclared) {
+		for (auto i = GetWorld()->GetPlayerControllerIterator(); i; ++i) {
+			auto* pc = Cast<APlayerCtrl>(i->Get());
+			pc->GetPlayerState<AShufflPlayerState>()->Score = 0;
+		}
 	}
 }
 
@@ -164,13 +174,14 @@ void AShuffl2PlayersGameMode::NextTurn()
 	auto iterator = GetWorld()->GetPlayerControllerIterator();
 	APlayerCtrl *next_player, *curr_player = nullptr;
 	decltype(MatchState) desiredState;
+
 	if (GetMatchState() == MatchState::Round_Player1) {
 		desiredState = MatchState::Round_Player2;
 		curr_player = Cast<APlayerCtrl>(*iterator);
 		iterator++;
 		next_player = Cast<APlayerCtrl>(*iterator);
-	} else { // P2 or Round_End
-		if (GetMatchState() == MatchState::Round_End) {
+	} else { // P2 or Round_End's
+		if (GetMatchState() != MatchState::Round_Player2) {
 			SetupRound();
 		}
 		desiredState = MatchState::Round_Player1;
@@ -181,14 +192,8 @@ void AShuffl2PlayersGameMode::NextTurn()
 
 	auto* curr_player_state = curr_player->GetPlayerState<AShufflPlayerState>();
 	auto* next_player_state = next_player->GetPlayerState<AShufflPlayerState>();
-	int totalScore = int(curr_player_state->Score) + int(next_player_state->Score);
-	if (totalScore == 21) {
-		EndMatch(); //TODO: manage properly end of match
-		return;
-	}
-	if ((curr_player_state->PucksToPlay + next_player_state->PucksToPlay) == 0) {
-		SetMatchState(MatchState::Round_End);
 
+	if ((curr_player_state->PucksToPlay + next_player_state->PucksToPlay) == 0) {
 		curr_player_state->PucksToPlay = ERound::PucksPerPlayer;
 		next_player_state->PucksToPlay = ERound::PucksPerPlayer;
 
@@ -198,7 +203,14 @@ void AShuffl2PlayersGameMode::NextTurn()
 		AShufflPlayerState* winner_player = winner_color == curr_player_state->Color ?
 			curr_player_state : next_player_state;
 		winner_player->Score += winner_score;
-		curr_player->Client_EnterScoreCounting(winner_color, winner_player->Score);
+		auto totalScore = int(curr_player_state->Score) + int(next_player_state->Score);
+		curr_player->Client_EnterScoreCounting(winner_color, winner_player->Score, totalScore);
+
+		if (totalScore >= UGameSubSys::ShufflGetWinningScore()) {
+			SetMatchState(MatchState::Round_WinnerDeclared);
+		} else {
+			SetMatchState(MatchState::Round_End);
+		}
 
 		return;
 	}

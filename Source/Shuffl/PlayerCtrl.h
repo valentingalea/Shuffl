@@ -105,7 +105,7 @@ public:
 	void SwitchToPlayView();
 
 	UFUNCTION(Client, Reliable)
-	void Client_EnterScoreCounting(EPuckColor winnerColor, int winnerScore);
+	void Client_EnterScoreCounting(EPuckColor winnerColor, int winnerScore, int totalScore);
 
 private:
 	virtual void BeginPlay() override;

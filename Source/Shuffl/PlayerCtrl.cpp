@@ -124,7 +124,8 @@ void APlayerCtrl::OnPuckResting(APuck *puck)
 	auto* gameState = Cast<AShufflGameState>(GetWorld()->GetGameState());
 	if (puck->TurnId < gameState->GlobalTurnCounter) return;
 	// abort if we're showing the end of round results - next one needs to be manual
-	if (gameState->GetMatchState() == MatchState::Round_End) return;
+	if (gameState->GetMatchState() == MatchState::Round_End ||
+		gameState->GetMatchState() == MatchState::Round_WinnerDeclared) return;
 
 	// otherwise force next turn/throw
 	Server_NewThrow();
@@ -392,12 +393,13 @@ void APlayerCtrl::SwitchToPlayView()
 	SetViewTargetWithBlend(GetPuck(), 0.f);
 }
 
-void APlayerCtrl::Client_EnterScoreCounting_Implementation(EPuckColor winnerColor, int score)
+void APlayerCtrl::Client_EnterScoreCounting_Implementation(EPuckColor winnerColor, 
+	int winnerScore, int totalScore)
 {
 	SwitchToDetailView();
 
 	auto sys = UGameSubSys::Get(this);
 	if (sys) {
-		sys->ScoreChanged.Broadcast(winnerColor, score);
+		sys->ScoreChanged.Broadcast(winnerColor, winnerScore, totalScore);
 	}
 }

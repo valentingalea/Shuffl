@@ -23,13 +23,6 @@
 
 #include "GameModes.generated.h"
 
-namespace MatchState
-{
-	extern const FName Round_Player1;
-	extern const FName Round_Player2;
-	extern const FName Round_End;
-};
-
 UCLASS()
 class SHUFFL_API AShufflPlayerState : public APlayerState
 {

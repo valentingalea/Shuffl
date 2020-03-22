@@ -46,3 +46,8 @@ class APlayerController* UGameSubSys::ShufflGetActivePlayerCtrl(const UObject* W
 	}
 	return nullptr;
 }
+
+int UGameSubSys::ShufflGetWinningScore()
+{
+	return ERound::WinningScore;
+}

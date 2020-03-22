@@ -26,8 +26,12 @@
 DECLARE_MULTICAST_DELEGATE_OneParam(FEvent_PuckResting, class APuck *);
 
 // handled in C++/Blueprint
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FEvent_ScoreChanged, EPuckColor, WinnerColor, int, NewScoreValue);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FEvent_PlayersChangeTurn, EPuckColor, NewColor);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FEvent_ScoreChanged, 
+							EPuckColor, WinnerColor,
+							int, NewScoreValue,
+							int, TotalScore);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FEvent_PlayersChangeTurn,
+							EPuckColor, NewColor);
 
 UCLASS()
 class UGameSubSys : public UGameInstanceSubsystem
@@ -47,4 +51,7 @@ public:
 
 	UFUNCTION(BlueprintPure, meta = (WorldContext = "WorldContextObject", UnsafeDuringActorConstruction = "true"))
 	static class APlayerController* ShufflGetActivePlayerCtrl(const UObject* WorldContextObject);
+
+	UFUNCTION(BlueprintPure)
+	static int ShufflGetWinningScore();
 };
