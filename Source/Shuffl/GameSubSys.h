@@ -26,10 +26,11 @@
 DECLARE_MULTICAST_DELEGATE_OneParam(FEvent_PuckResting, class APuck *);
 
 // handled in C++/Blueprint
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FEvent_ScoreChanged, 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_FourParams(FEvent_ScoreChanged, 
 							EPuckColor, WinnerColor,
-							int, NewScoreValue,
-							int, TotalScore);
+							int, WinnerTotalScore,
+							int, WinnerRoundScore,
+							int, MatchScore);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FEvent_PlayersChangeTurn,
 							EPuckColor, NewColor);
 

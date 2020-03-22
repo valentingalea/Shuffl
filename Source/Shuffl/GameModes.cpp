@@ -204,7 +204,6 @@ void AShuffl2PlayersGameMode::NextTurn()
 			curr_player_state : next_player_state;
 		winner_player->Score += winner_score;
 		auto totalScore = int(curr_player_state->Score) + int(next_player_state->Score);
-		curr_player->Client_EnterScoreCounting(winner_color, winner_player->Score, totalScore);
 
 		if (totalScore >= UGameSubSys::ShufflGetWinningScore()) {
 			SetMatchState(MatchState::Round_WinnerDeclared);
@@ -212,6 +211,8 @@ void AShuffl2PlayersGameMode::NextTurn()
 			SetMatchState(MatchState::Round_End);
 		}
 
+		curr_player->Client_EnterScoreCounting(winner_color, winner_player->Score,
+			winner_score, totalScore);
 		return;
 	}
 
