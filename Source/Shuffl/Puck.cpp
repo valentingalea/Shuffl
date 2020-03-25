@@ -66,8 +66,8 @@ APuck::APuck()
 
 void APuck::ApplyThrow(FVector2D force)
 {
-	Velocity = force;
-	ThePuck->AddImpulse(FVector(force.X, force.Y, 0));
+	Impulse = FVector(force.X, force.Y, 0);
+	ThePuck->AddImpulse(Impulse);
 	State = EPuckState::Traveling;
 }
 
@@ -92,7 +92,7 @@ void APuck::SetColor(EPuckColor newColor)
 void APuck::PreviewSpin(float spinAmount)
 {
 	auto mesh = FindCap(Color, this);
-	mesh->SetRelativeRotation(FRotator(0, spinAmount, 0));
+	mesh->SetRelativeRotation(FRotator(0, FMath::RadiansToDegrees(spinAmount), 0));
 }
 
 static float NormalArmLength;
@@ -110,10 +110,14 @@ void APuck::OnExitSpin()
 	TheSpringArm->bEnableCameraLag = true;
 }
 
-void APuck::ApplySpin(float spinAmount)
+void APuck::ApplySpin(float spinAmount, float fingerVelocity)
 {
-	Velocity.Y = spinAmount; // X should have been set elsewhere
-	State = EPuckState::Traveling;
+	//     .X set previously during the throw part
+	Impulse.Y = spinAmount;
+	Impulse.Z = fingerVelocity;
+	State = EPuckState::Traveling_WithSpin;
+	SpinAccumulator = 0.f;
+	ThePuck->AddAngularImpulseInRadians(FVector(0, 0, PI * Radius * 2.f * spinAmount));
 }
 
 void APuck::MoveTo(FVector location)
@@ -133,14 +137,20 @@ FBox APuck::GetBoundingBox()
 
 void APuck::Tick(float deltaTime)
 {
-	if (State != EPuckState::Traveling) return;
+	if (State != EPuckState::Traveling && State != EPuckState::Traveling_WithSpin) return;
 
 	Lifetime += deltaTime;
 	FVector vel = ThePuck->GetPhysicsLinearVelocity();
 
-	if (ThrowMode == EPuckThrowMode::WithSpin) {
-		ThePuck->AddForce(FVector(0, Velocity.Y, 0));
-		//TODO: find a way for the condition bellow to make sense 
+	if (State == EPuckState::Traveling_WithSpin) {
+		const auto spin_angle = Impulse.Y;
+		const auto spin_vel = Impulse.Z;
+
+		if (SpinAccumulator <= FMath::Abs(spin_angle * Radius)) {
+			auto s = spin_vel * deltaTime;
+			SpinAccumulator += s;
+			ThePuck->AddImpulse(FVector(0, s * (spin_angle >= 0 ? 1 : -1), 0));
+		}
 	}
 
 	if ((vel.SizeSquared() < .0001f) && Lifetime > ThresholdToResting) {

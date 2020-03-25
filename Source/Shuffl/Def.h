@@ -22,6 +22,7 @@ enum class EPuckState : uint8
 {
 	Setup,
 	Traveling,
+	Traveling_WithSpin,
 	Resting
 };
 

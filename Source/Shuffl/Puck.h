@@ -30,8 +30,11 @@ class SHUFFL_API APuck : public APawn
 public:
 	APuck();
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Setup)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Puck)
 	EPuckColor Color = EPuckColor::Red;
+
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = Puck)
+	float Radius = 2.5f; //cm
 
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = Setup)
 	UClass* PuckMeshClass;
@@ -55,12 +58,12 @@ public:
 	EPuckThrowMode ThrowMode = EPuckThrowMode::Simple;
 	int TurnId = 0;
 
-	FVector2D Velocity = FVector2D::ZeroVector;
+	FVector Impulse = FVector::ZeroVector; // X: flick Y: spin-angle Z: spin-velocity
 	void ApplyThrow(FVector2D);
 	void MoveTo(FVector);
 	void SetColor(EPuckColor);
 
-	void ApplySpin(float);
+	void ApplySpin(float, float);
 	void PreviewSpin(float);
 	void OnEnterSpin();
 	void OnExitSpin();
@@ -71,8 +74,9 @@ public:
 	FBox GetBoundingBox(); // will return just the puck component not the auxiliary elements
 
 private:
-	virtual void Tick(float DeltaTime) override;
+	virtual void Tick(float) override;
 
 	EPuckState State = EPuckState::Setup;
 	float Lifetime = 0.f; // since it started Traveling (in sec)
+	float SpinAccumulator = 0.f;
 };

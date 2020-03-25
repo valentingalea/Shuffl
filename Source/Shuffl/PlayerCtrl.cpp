@@ -256,9 +256,15 @@ void APlayerCtrl::ConsumeTouchOff(const ETouchIndex::Type fingerIndex, const FVe
 
 	if (fingerIndex != ETouchIndex::Touch1) return;
 
+	float deltaTime = GetWorld()->GetRealTimeSeconds() - ThrowStartTime;
+	FVector2D gestureEndPoint = FVector2D(location);
+	FVector2D gestureVector = gestureEndPoint - ThrowStartPoint;
+	float distance = gestureVector.Size();
+	float velocity = distance / deltaTime;
+
 	if (PlayMode == EPlayerCtrlMode::Spin) {
 		CalculateSpin(location);
-		ExitSpinMode();
+		ExitSpinMode(velocity);
 		return;
 	}
 
@@ -270,12 +276,6 @@ void APlayerCtrl::ConsumeTouchOff(const ETouchIndex::Type fingerIndex, const FVe
 		PlayMode = EPlayerCtrlMode::Observe;
 		return;
 	}
-
-	float deltaTime = GetWorld()->GetRealTimeSeconds() - ThrowStartTime;
-	FVector2D gestureEndPoint = FVector2D(location);
-	FVector2D gestureVector = gestureEndPoint - ThrowStartPoint;
-	float distance = gestureVector.Size();
-	float velocity = distance / deltaTime;
 
 	if (velocity < EscapeVelocity) {
 		MovePuckOnTouchPosition(gestureEndPoint);
@@ -306,10 +306,11 @@ void APlayerCtrl::ThrowPuck(FVector2D gestureVector, float velocity)
 
 float APlayerCtrl::CalculateSpin(FVector touchLocation)
 {
-	SpinAmount = (SpinStartPoint - FVector2D(touchLocation)).X / ThrowForceScaling;
-	auto preview = SpinAmount * 2.f;
-	//SpinAmount /= ThrowForceScaling;
-	return preview;
+	// get the vector of: touch point - the original start point
+	const auto P = FVector2D(SpinStartPoint.X - touchLocation.X, SpinStartPoint.Y);
+	SpinAmount = atan2(P.X, P.Y);	// reversed args due to coordinate frame of "X" 
+									// axis being the length of the portrait screen
+	return SpinAmount;
 }
 
 void APlayerCtrl::EnterSpinMode()
@@ -319,17 +320,17 @@ void APlayerCtrl::EnterSpinMode()
 	GetPuck()->OnEnterSpin();
 	GetWorldSettings()->SetTimeDilation(SpinSlowMoFactor);
 
-	GetWorldTimerManager().SetTimer(SpinTimer, this, &APlayerCtrl::ExitSpinMode,
+	GetWorldTimerManager().SetTimer(SpinTimer, [this]() { ExitSpinMode(0.f); },
 		SpinTime * SpinSlowMoFactor, false);
 }
 
-void APlayerCtrl::ExitSpinMode()
+void APlayerCtrl::ExitSpinMode(float fingerVelocity)
 {
 	if (PlayMode != EPlayerCtrlMode::Spin) return; // can be triggered by timer or user, choose earliest
 	PlayMode = EPlayerCtrlMode::Observe;
 
 	GetPuck()->OnExitSpin();
-	GetPuck()->ApplySpin(SpinAmount);
+	GetPuck()->ApplySpin(SpinAmount, fingerVelocity);
 	DebugPrint(TEXT("Spin %3.1f"), SpinAmount);
 
 	GetWorldSettings()->SetTimeDilation(1.f);

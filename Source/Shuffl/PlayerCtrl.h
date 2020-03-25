@@ -138,8 +138,8 @@ private:
 // Spin mode
 //
 	void EnterSpinMode();
-	void ExitSpinMode();
-	float CalculateSpin(FVector); // returns diff number for preview
+	void ExitSpinMode(float);
+	float CalculateSpin(FVector);
 	float SpinAmount = 0.f;
 	FTimerHandle SpinTimer;
 
