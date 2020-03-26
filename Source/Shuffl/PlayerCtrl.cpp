@@ -262,7 +262,7 @@ void APlayerCtrl::ConsumeTouchOff(const ETouchIndex::Type fingerIndex, const FVe
 	FVector2D gestureVector = gestureEndPoint - ThrowStartPoint;
 	float distance = gestureVector.Size();
 	float velocity = distance / deltaTime;
-	float angle = atan2(-gestureVector.X, -gestureVector.Y) + PI / 2.f;
+	float angle = FMath::Atan2(-gestureVector.X, -gestureVector.Y) + PI / 2.f;
 		// need to rotate otherwise it's 0 when drawing straight throw (screen lenghtwise)
 
 	if (PlayMode == EPlayerCtrlMode::Spin) {
@@ -312,7 +312,7 @@ float APlayerCtrl::CalculateSpin(FVector touchLocation)
 {
 	// get the vector of: touch point - the original start point
 	const auto P = FVector2D(SpinStartPoint.X - touchLocation.X, SpinStartPoint.Y);
-	SpinAmount = atan2(P.X, P.Y);	// reversed args due to coordinate frame of "X" 
+	SpinAmount = FMath::Atan2(P.X, P.Y);	// reversed args due to coordinate frame of "X" 
 									// axis being the length of the portrait screen
 	return SpinAmount;
 }
@@ -347,7 +347,7 @@ void APlayerCtrl::PreviewSlingshot(FVector touchLocation)
 
 	auto d = TouchStartHitResult.ImpactPoint - h.ImpactPoint;
 	d.Z = 0;
-	auto a = atan2(d.X, d.Y);
+	auto a = FMath::Atan2(d.X, d.Y);
 	if (a >= .785f && a <= 2.356f) // 45-135 degrees
 	{
 		SlingshotDir = d;
