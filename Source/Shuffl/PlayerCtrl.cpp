@@ -255,12 +255,15 @@ void APlayerCtrl::ConsumeTouchOff(const ETouchIndex::Type fingerIndex, const FVe
 	make_sure(GetPuck());
 
 	if (fingerIndex != ETouchIndex::Touch1) return;
+	if (PlayMode == EPlayerCtrlMode::Observe) return;
 
 	float deltaTime = GetWorld()->GetRealTimeSeconds() - ThrowStartTime;
 	FVector2D gestureEndPoint = FVector2D(location);
 	FVector2D gestureVector = gestureEndPoint - ThrowStartPoint;
 	float distance = gestureVector.Size();
 	float velocity = distance / deltaTime;
+	float angle = atan2(-gestureVector.X, -gestureVector.Y) + PI / 2.f;
+		// need to rotate otherwise it's 0 when drawing straight throw (screen lenghtwise)
 
 	if (PlayMode == EPlayerCtrlMode::Spin) {
 		CalculateSpin(location);
@@ -268,16 +271,17 @@ void APlayerCtrl::ConsumeTouchOff(const ETouchIndex::Type fingerIndex, const FVe
 		return;
 	}
 
-	if (PlayMode == EPlayerCtrlMode::Observe) return;
-
 	GetPuck()->HideSlingshotPreview();
-	if (PlayMode == EPlayerCtrlMode::Slingshot && deltaTime > 1.f) {
+	if (PlayMode == EPlayerCtrlMode::Slingshot 
+			&& (deltaTime > .2f/*sec*/)
+			&& !SlingshotDir.IsNearlyZero()) {
 		DoSlingshot();
 		PlayMode = EPlayerCtrlMode::Observe;
 		return;
 	}
 
-	if (velocity < EscapeVelocity) {
+	if (velocity < EscapeVelocity || 
+			angle < 0.349f/*20 deg*/ || angle > 2.793f/*160 deg*/) {
 		MovePuckOnTouchPosition(gestureEndPoint);
 		PlayMode = EPlayerCtrlMode::Setup;
 	} else {
