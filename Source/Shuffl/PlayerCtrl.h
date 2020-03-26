@@ -106,7 +106,7 @@ public:
 
 	UFUNCTION(Client, Reliable)
 	void Client_EnterScoreCounting(EPuckColor winnerColor, int winnerTotalScore, 
-		int winnerRoundScore, int matchScore);
+		int winnerRoundScore);
 
 private:
 	virtual void BeginPlay() override;

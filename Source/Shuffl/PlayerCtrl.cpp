@@ -399,11 +399,10 @@ void APlayerCtrl::SwitchToPlayView()
 }
 
 void APlayerCtrl::Client_EnterScoreCounting_Implementation(EPuckColor winnerColor, 
-	int winnerTotalScore, int winnerRoundScore, int matchScore)
+	int winnerTotalScore, int winnerRoundScore)
 {
 	SwitchToDetailView();
 
 	auto sys = UGameSubSys::Get(this);
-	sys->ScoreChanged.Broadcast(winnerColor, winnerTotalScore,
-		winnerRoundScore, matchScore);
+	sys->ScoreChanged.Broadcast(winnerColor, winnerTotalScore, winnerRoundScore);
 }

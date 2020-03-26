@@ -198,21 +198,20 @@ void AShuffl2PlayersGameMode::NextTurn()
 		next_player_state->PucksToPlay = ERound::PucksPerPlayer;
 
 		EPuckColor winner_color;
-		int winner_score;
-		CalculateRoundScore(winner_color, winner_score);
+		int round_score;
+		CalculateRoundScore(winner_color, round_score);
 		AShufflPlayerState* winner_player = winner_color == curr_player_state->Color ?
 			curr_player_state : next_player_state;
-		winner_player->Score += winner_score;
-		auto totalScore = int(curr_player_state->Score) + int(next_player_state->Score);
+		winner_player->Score += round_score;
 
-		if (totalScore >= UGameSubSys::ShufflGetWinningScore()) {
+		if (winner_player->Score >= UGameSubSys::ShufflGetWinningScore()) {
 			SetMatchState(MatchState::Round_WinnerDeclared);
 		} else {
 			SetMatchState(MatchState::Round_End);
 		}
 
-		curr_player->Client_EnterScoreCounting(winner_color, winner_player->Score,
-			winner_score, totalScore);
+		curr_player->Client_EnterScoreCounting(winner_color, 
+			winner_player->Score, round_score);
 		return;
 	}
 
