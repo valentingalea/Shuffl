@@ -71,20 +71,17 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void RequestNewThrow();
 
-	UFUNCTION(Unreliable, Server, WithValidation)
-	void Server_NewThrow();
-
-	UFUNCTION(Client, Reliable)
-	void Client_NewThrow(); //TODO: possibly move more of this on server
-
 	UFUNCTION(BlueprintCallable)
 	void SwitchToDetailView();
 
 	UFUNCTION(BlueprintCallable)
 	void SwitchToPlayView();
 
-	UFUNCTION(Client, Reliable)
-	void Client_EnterScoreCounting(EPuckColor winnerColor, int winnerTotalScore, 
+//
+// GameMode interface (in true net play these would be RPC's)
+//
+	void HandleNewThrow();
+	void HandleScoreCounting(EPuckColor winnerColor, int winnerTotalScore,
 		int winnerRoundScore);
 
 private:
@@ -93,7 +90,6 @@ private:
 	void OnQuit();
 
 	APuck* GetPuck();
-	void OnPuckResting(APuck*);
 	void MovePuckOnTouchPosition(FVector2D);
 
 	void ConsumeTouchOn(const ETouchIndex::Type, const FVector);

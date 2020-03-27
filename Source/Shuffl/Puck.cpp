@@ -15,21 +15,23 @@
 
 #include "Puck.h"
 
+#include "EngineUtils.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Camera/CameraComponent.h"
 #include "Camera/CameraActor.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Components/StaticMeshComponent.h"
-#include "Kismet/GameplayStatics.h"
 #include "Components/ArrowComponent.h"
+#include "Kismet/GameplayStatics.h"
 
 #include "Shuffl.h"
-#include "GameSubSys.h"
+#include "GameModes.h"
+#include "ScoringVolume.h"
+#include "SceneProps.h"
 
 // Sets default values
 APuck::APuck()
 {
-	//TODO: this should be taken from a .ini config
 	// official documentation warns against this practice https://docs.unrealengine.com/en-US/Resources/SampleGames/ARPG/BalancingBlueprintAndCPP/index.html
 	// here it's used to make sure the the "look at" class is fixed and save recreating it
 	static ConstructorHelpers::FClassFinder<UStaticMeshComponent> puck(TEXT("/Game/BPC_Puck"));
@@ -64,11 +66,66 @@ APuck::APuck()
 	PrimaryActorTick.bCanEverTick = true;
 }
 
+void APuck::Tick(float deltaTime)
+{
+	if (State != EPuckState::Traveling && State != EPuckState::Traveling_WithSpin) return;
+
+	Lifetime += deltaTime;
+	FVector vel = ThePuck->GetPhysicsLinearVelocity();
+
+	if (State == EPuckState::Traveling_WithSpin) {
+		const auto spin_angle = Impulse.Y;
+		const auto spin_vel = Impulse.Z;
+
+		if (SpinAccumulator <= FMath::Abs(spin_angle * Radius)) {
+			auto s = spin_vel * deltaTime;
+			SpinAccumulator += s;
+			ThePuck->AddImpulse(FVector(0, s * (spin_angle >= 0 ? 1 : -1), 0));
+		}
+	}
+
+	if ((vel.SizeSquared() < .0001f) && Lifetime > ThresholdToResting) {
+		State = EPuckState::Resting;
+		OnResting();
+	}
+}
+
+void APuck::OnResting()
+{
+	auto iter = TActorIterator<ASceneProps>(GetWorld());
+	make_sure(*iter);
+	auto *SceneProps = Cast<ASceneProps>(*iter);
+
+	FBox killVol = SceneProps->KillingVolume->GetBounds().GetBox();
+	FBox puckVol = GetBoundingBox();
+	if (killVol.Intersect(puckVol)) {
+		Destroy();
+	}
+
+	// abort if next turn already happened
+	auto* gameState = Cast<AShufflGameState>(GetWorld()->GetGameState());
+	if (TurnId < gameState->GlobalTurnCounter) return;
+	// abort if we're showing the end of round results - next one needs to be manual
+	if (gameState->GetMatchState() == MatchState::Round_End ||
+		gameState->GetMatchState() == MatchState::Round_WinnerDeclared) return;
+
+	// otherwise force next turn/throw
+	GetWorld()->GetAuthGameMode<AShufflCommonGameMode>()->NextTurn();
+}
+
 void APuck::ApplyThrow(FVector2D force)
 {
 	Impulse = FVector(force.X, force.Y, 0);
 	ThePuck->AddImpulse(Impulse);
 	State = EPuckState::Traveling;
+}
+
+void APuck::MoveTo(FVector location)
+{
+	ThePuck->SetWorldLocationAndRotation(location, FRotator::ZeroRotator,
+		false/*sweep*/, nullptr/*hit result*/,
+		ETeleportType::TeleportPhysics); //NOTE: ResetPhysics causes problems
+	State = EPuckState::Setup;
 }
 
 inline UStaticMeshComponent* FindCap(EPuckColor color, AActor* parent)
@@ -120,47 +177,6 @@ void APuck::ApplySpin(float spinAmount, float fingerVelocity)
 	ThePuck->AddAngularImpulseInRadians(FVector(0, 0, PI * Radius * 2.f * spinAmount));
 }
 
-void APuck::MoveTo(FVector location)
-{
-	ThePuck->SetWorldLocationAndRotation(location, FRotator::ZeroRotator,
-		false/*sweep*/, nullptr/*hit result*/,
-		ETeleportType::TeleportPhysics); //NOTE: ResetPhysics causes problems
-	State = EPuckState::Setup;
-}
-
-FBox APuck::GetBoundingBox()
-{
-	FVector _min, _max;
-	ThePuck->GetLocalBounds(_min, _max);
-	return FBox(_min, _max).MoveTo(ThePuck->GetComponentLocation());
-}
-
-void APuck::Tick(float deltaTime)
-{
-	if (State != EPuckState::Traveling && State != EPuckState::Traveling_WithSpin) return;
-
-	Lifetime += deltaTime;
-	FVector vel = ThePuck->GetPhysicsLinearVelocity();
-
-	if (State == EPuckState::Traveling_WithSpin) {
-		const auto spin_angle = Impulse.Y;
-		const auto spin_vel = Impulse.Z;
-
-		if (SpinAccumulator <= FMath::Abs(spin_angle * Radius)) {
-			auto s = spin_vel * deltaTime;
-			SpinAccumulator += s;
-			ThePuck->AddImpulse(FVector(0, s * (spin_angle >= 0 ? 1 : -1), 0));
-		}
-	}
-
-	if ((vel.SizeSquared() < .0001f) && Lifetime > ThresholdToResting) {
-		State = EPuckState::Resting;
-		if (auto sys = UGameSubSys::Get(this)) {
-			sys->PuckResting.Broadcast(this);
-		}
-	}
-}
-
 void APuck::ShowSlingshotPreview(FVector rot, FColor color)
 {
 	auto* arrow = static_cast<UArrowComponent*>(GetComponentByClass(UArrowComponent::StaticClass()));
@@ -175,4 +191,11 @@ void APuck::HideSlingshotPreview()
 	auto* arrow = static_cast<UArrowComponent*>(GetComponentByClass(UArrowComponent::StaticClass()));
 	make_sure(arrow);
 	arrow->SetHiddenInGame(true);
+}
+
+FBox APuck::GetBoundingBox()
+{
+	FVector _min, _max;
+	ThePuck->GetLocalBounds(_min, _max);
+	return FBox(_min, _max).MoveTo(ThePuck->GetComponentLocation());
 }

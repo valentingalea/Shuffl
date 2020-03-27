@@ -70,10 +70,6 @@ void APlayerCtrl::BeginPlay()
 		make_sure(SceneProps->KillingVolume);
 
 		StartingPoint = SceneProps->StartingPoint->GetActorLocation();
-
-		if (auto sys = UGameSubSys::Get(this)) {
-			sys->PuckResting.AddUObject(this, &APlayerCtrl::OnPuckResting);
-		}
 	}
 
 	TouchHistory.Reserve(64);
@@ -102,49 +98,14 @@ void APlayerCtrl::OnQuit()
 	FPlatformMisc::RequestExit(false);
 }
 
-void APlayerCtrl::OnPuckResting(APuck *puck)
-{
-	make_sure(puck);
-	if (puck->Color != GetPlayerState<AShufflPlayerState>()->Color) return;
-
-	FBox killVol = SceneProps->KillingVolume->GetBounds().GetBox();
-	FBox puckVol = puck->GetBoundingBox();
-	if (killVol.Intersect(puckVol)) {
-		puck->Destroy();
-	}
-
-	// abort if player changed mode on his own
-	if (PlayMode != EPlayerCtrlMode::Observe) return;
-	// abort if next turn already happened
-	auto* gameState = Cast<AShufflGameState>(GetWorld()->GetGameState());
-	if (puck->TurnId < gameState->GlobalTurnCounter) return;
-	// abort if we're showing the end of round results - next one needs to be manual
-	if (gameState->GetMatchState() == MatchState::Round_End ||
-		gameState->GetMatchState() == MatchState::Round_WinnerDeclared) return;
-
-	// otherwise force next turn/throw
-	Server_NewThrow();
-}
-
 void APlayerCtrl::RequestNewThrow()
 {
 	if (PlayMode == EPlayerCtrlMode::Setup && GetPuck()) return;
-	Server_NewThrow();
-}
-
-bool APlayerCtrl::Server_NewThrow_Validate()
-{
-	return true;
-}
-
-void APlayerCtrl::Server_NewThrow_Implementation()
-{
 	GetWorld()->GetAuthGameMode<AShufflCommonGameMode>()->NextTurn();
 }
 
-void APlayerCtrl::Client_NewThrow_Implementation()
+void APlayerCtrl::HandleNewThrow()
 {
-//	ensure(GetLocalRole() != ROLE_Authority);
 	if (PlayMode == EPlayerCtrlMode::Spin) return;
 
 	if (SceneProps->ARTable) {
@@ -169,19 +130,18 @@ void APlayerCtrl::Client_NewThrow_Implementation()
 	}
 	make_sure(new_puck);
 
-	Possess(new_puck);
 	new_puck->SetColor(GetPlayerState<AShufflPlayerState>()->Color);
 	new_puck->ThrowMode = EPuckThrowMode::Simple;
 	auto* gameState = Cast<AShufflGameState>(GetWorld()->GetGameState());
 	new_puck->TurnId = gameState->GlobalTurnCounter;
+	Possess(new_puck);
+
 	SpinAmount = 0.f;
 	SlingshotDir = FVector::ZeroVector;
-
 	PlayMode = EPlayerCtrlMode::Setup;
 
-	if (auto sys = UGameSubSys::Get(this)) {
-		sys->PlayersChangeTurn.Broadcast(new_puck->Color);
-	}
+	auto sys = UGameSubSys::Get(this);
+	sys->PlayersChangeTurn.Broadcast(new_puck->Color);
 
 	if (SceneProps->ARTable) {
 		SwitchToDetailView();
@@ -394,7 +354,7 @@ void APlayerCtrl::SwitchToPlayView()
 	SetViewTargetWithBlend(GetPuck(), 0.f);
 }
 
-void APlayerCtrl::Client_EnterScoreCounting_Implementation(EPuckColor winnerColor, 
+void APlayerCtrl::HandleScoreCounting(EPuckColor winnerColor,
 	int winnerTotalScore, int winnerRoundScore)
 {
 	SwitchToDetailView();

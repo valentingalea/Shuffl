@@ -75,6 +75,7 @@ public:
 
 private:
 	virtual void Tick(float) override;
+	void OnResting();
 
 	EPuckState State = EPuckState::Setup;
 	float Lifetime = 0.f; // since it started Traveling (in sec)

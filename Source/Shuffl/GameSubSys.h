@@ -22,10 +22,6 @@
 
 #include "GameSubSys.generated.h"
 
-// only handled in C++
-DECLARE_MULTICAST_DELEGATE_OneParam(FEvent_PuckResting, class APuck *);
-
-// handled in C++/Blueprint
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FEvent_ScoreChanged,
 							EPuckColor, WinnerColor,
 							int, WinnerTotalScore,
@@ -40,8 +36,6 @@ class UGameSubSys : public UGameInstanceSubsystem
 
 public:
 	static UGameSubSys* Get(const UObject* ContextObject);
-
-	FEvent_PuckResting PuckResting;
 
 	UPROPERTY(BlueprintAssignable)
 	FEvent_ScoreChanged ScoreChanged;

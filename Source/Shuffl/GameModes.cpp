@@ -136,7 +136,7 @@ void AShufflPracticeGameMode::NextTurn()
 {
 	auto iterator = GetWorld()->GetPlayerControllerIterator(); 
 	auto* controller = Cast<APlayerCtrl>(*iterator);
-	controller->Client_NewThrow();
+	controller->HandleNewThrow();
 }
 
 void AShuffl2PlayersGameMode::HandleMatchIsWaitingToStart()
@@ -210,7 +210,7 @@ void AShuffl2PlayersGameMode::NextTurn()
 			SetMatchState(MatchState::Round_End);
 		}
 
-		curr_player->Client_EnterScoreCounting(winner_color, 
+		curr_player->HandleScoreCounting(winner_color,
 			winner_player->Score, round_score);
 		return;
 	}
@@ -223,5 +223,5 @@ void AShuffl2PlayersGameMode::NextTurn()
 	SetMatchState(desiredState);
 
 	curr_player->Player->SwitchController(next_player);
-	next_player->Client_NewThrow();
+	next_player->HandleNewThrow();
 }
