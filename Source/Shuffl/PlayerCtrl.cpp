@@ -29,6 +29,7 @@
 #include "GameSubSys.h"
 #include "GameModes.h"
 #include "ScoringVolume.h"
+#include "SceneProps.h"
 
 template <typename FmtType, typename... Types>
 inline void DebugPrint(const FmtType& fmt, Types... args)
@@ -46,12 +47,6 @@ inline FHitResult ProjectScreenPoint(const APlayerCtrl *ctrl, const FVector2D& l
 	ctrl->GetHitResultAtScreenPosition(location, ECC_Visibility,
 		false/*trace complex*/, hitResult);
 	return hitResult;
-}
-
-ASceneProps::ASceneProps()
-{
-	auto root = CreateDefaultSubobject<USceneComponent>(TEXT("Dummy"));
-	RootComponent = root;
 }
 
 APlayerCtrl::APlayerCtrl()

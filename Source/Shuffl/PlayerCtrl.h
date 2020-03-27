@@ -23,27 +23,6 @@
 
 #include "PlayerCtrl.generated.h"
 
-UCLASS(hidecategories = (Rendering, Replication, Collision, Input, Actor, LOD, Cooking))
-class ASceneProps : public AActor
-{
-	GENERATED_BODY()
-
-public:
-	ASceneProps();
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = PlayerCtrl)
-	class APlayerStart* StartingPoint;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = PlayerCtrl)
-	class ACameraActor* DetailViewCamera;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = PlayerCtrl)
-	class AKillingVolume* KillingVolume;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = AR)
-	AActor* ARTable;
-};
-
 UCLASS(hidecategories = (Actor, "Actor Tick", Input, Game, "Mouse Interface", "Cheat Manager", LOD, Cooking))
 class SHUFFL_API APlayerCtrl : public APlayerController
 {
@@ -122,7 +101,7 @@ private:
 	void ConsumeTouchOff(const ETouchIndex::Type, const FVector);
 	TArray<FVector2D> TouchHistory;
 
-	TWeakObjectPtr<ASceneProps> SceneProps;
+	TWeakObjectPtr<class ASceneProps> SceneProps;
 	EPlayerCtrlMode PlayMode = EPlayerCtrlMode::Setup;
 
 //
