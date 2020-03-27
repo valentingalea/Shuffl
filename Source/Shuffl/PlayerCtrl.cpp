@@ -294,7 +294,8 @@ void APlayerCtrl::ConsumeTouchOff(const ETouchIndex::Type fingerIndex, const FVe
 void APlayerCtrl::ThrowPuck(FVector2D gestureVector, float velocity)
 {
 	gestureVector.Normalize();
-	gestureVector *= velocity / ThrowForceScaling;
+	gestureVector *= velocity / (50.f - ThrowForceScaling);
+		//TODO: HACK: inverted it so it makes more sense: low scale -> slow flick push
 
 	auto X = FMath::Clamp(FMath::Abs(gestureVector.Y), 0.f, ThrowForceMax);
 	auto Y = FMath::Clamp(gestureVector.X, -ThrowForceMax, ThrowForceMax);
