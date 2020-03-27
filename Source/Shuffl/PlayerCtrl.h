@@ -80,11 +80,11 @@ public:
 //
 // GameMode interface (in true net play these would be RPC's)
 //
-	void HandleNewThrow();
-	void HandleScoreCounting(EPuckColor winnerColor, int winnerTotalScore,
+	virtual void HandleNewThrow();
+	virtual void HandleScoreCounting(EPuckColor winnerColor, int winnerTotalScore,
 		int winnerRoundScore);
 
-private:
+protected:
 	virtual void BeginPlay() override;
 	virtual void SetupInputComponent() override;
 	void OnQuit();
@@ -92,19 +92,20 @@ private:
 	APuck* GetPuck();
 	void MovePuckOnTouchPosition(FVector2D);
 
+	FVector StartingPoint = FVector::ZeroVector;
+	TWeakObjectPtr<class ASceneProps> SceneProps;
+	EPlayerCtrlMode PlayMode = EPlayerCtrlMode::Setup;
+
+private:
 	void ConsumeTouchOn(const ETouchIndex::Type, const FVector);
 	void ConsumeTouchRepeat(const ETouchIndex::Type, const FVector);
 	void ConsumeTouchOff(const ETouchIndex::Type, const FVector);
 	TArray<FVector2D> TouchHistory;
 
-	TWeakObjectPtr<class ASceneProps> SceneProps;
-	EPlayerCtrlMode PlayMode = EPlayerCtrlMode::Setup;
-
 //
 // Flick mode
 //
 	void ThrowPuck(FVector2D, float);
-	FVector StartingPoint = FVector::ZeroVector;
 	float ThrowStartTime = 0.f;
 	FVector2D ThrowStartPoint = FVector2D::ZeroVector;
 	FVector2D SpinStartPoint = FVector2D::ZeroVector;
@@ -131,3 +132,13 @@ inline APuck* APlayerCtrl::GetPuck()
 	ensure(GetPawn() && !GetPawn()->IsPendingKill());
 	return GetPawn<APuck>();
 }
+
+UCLASS()
+class AAIPlayerCtrl : public APlayerCtrl
+{
+	GENERATED_BODY()
+
+public:
+	virtual void SetupInputComponent() override;
+	virtual void HandleNewThrow() override;
+};

@@ -92,3 +92,12 @@ public:
 
 	virtual void NextTurn() override;
 };
+
+UCLASS()
+class SHUFFL_API AShufflAgainstAIGameMode : public AShuffl2PlayersGameMode
+{
+	GENERATED_BODY()
+
+public:
+	virtual void HandleMatchIsWaitingToStart() override;
+};

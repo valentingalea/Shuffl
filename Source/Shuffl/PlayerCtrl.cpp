@@ -362,3 +362,33 @@ void APlayerCtrl::HandleScoreCounting(EPuckColor winnerColor,
 	auto sys = UGameSubSys::Get(this);
 	sys->ScoreChanged.Broadcast(winnerColor, winnerTotalScore, winnerRoundScore);
 }
+
+void AAIPlayerCtrl::SetupInputComponent()
+{
+	APlayerController::SetupInputComponent();
+
+	InputComponent->BindAction("Quit", IE_Released, this, &AAIPlayerCtrl::OnQuit);
+	InputComponent->BindAction("Rethrow", IE_Released, this, &AAIPlayerCtrl::RequestNewThrow);
+}
+
+void AAIPlayerCtrl::HandleNewThrow()
+{
+	Super::HandleNewThrow();
+
+	static FTimerHandle MoveTimer;
+	GetWorldTimerManager().SetTimer(MoveTimer, 
+		[this]() {
+			FVector p = StartingPoint - StartingLine / 2.f;
+			p.Y += FMath::RandRange(0.f, StartingLine.Y);
+			GetPuck()->MoveTo(p);
+		},
+		1.f/*sec*/, false);
+
+	static FTimerHandle ThrowTimer;
+	GetWorldTimerManager().SetTimer(ThrowTimer,
+		[this]() {
+			float force = ThrowForceMax / FMath::RandRange(1.f, 5.f);
+			GetPuck()->ApplyThrow(FVector2D(force, 0.f));
+		},
+		2.f/*sec*/, false);
+}
