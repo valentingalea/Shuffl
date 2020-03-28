@@ -228,7 +228,7 @@ void APlayerCtrl::ConsumeTouchOff(const ETouchIndex::Type fingerIndex, const FVe
 
 	GetPuck()->HideSlingshotPreview();
 	if (PlayMode == EPlayerCtrlMode::Slingshot 
-			&& (deltaTime > .2f/*sec*/)
+			&& (deltaTime > .1f/*sec*/)
 			&& !SlingshotDir.IsNearlyZero()) {
 		DoSlingshot();
 		PlayMode = EPlayerCtrlMode::Observe;
