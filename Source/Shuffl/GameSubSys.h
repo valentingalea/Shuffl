@@ -48,4 +48,6 @@ public:
 
 	UFUNCTION(BlueprintPure)
 	static int ShufflGetWinningScore();
+
+	void XmppTest();
 };

@@ -17,6 +17,7 @@
 #include "Engine.h"
 #include "Engine\GameInstance.h"
 
+#include "Shuffl.h"
 #include "GameModes.h"
 
 UGameSubSys* UGameSubSys::Get(const UObject* ContextObject)
@@ -50,4 +51,49 @@ class APlayerController* UGameSubSys::ShufflGetActivePlayerCtrl(const UObject* W
 int UGameSubSys::ShufflGetWinningScore()
 {
 	return ERound::WinningScore;
+}
+
+#include "Online/XMPP/Public/XmppModule.h"
+#include "Online/XMPP/Public/XmppConnection.h"
+#include "Online/XMPP/Public/XmppPresence.h"
+
+TSharedPtr<IXmppConnection> XmppConnection;
+
+void UGameSubSys::XmppTest()
+{
+	FString UserId = TEXT("p2");
+	FString Password = TEXT("123");
+	FXmppServer XmppServer;
+	XmppServer.bUseSSL = true;
+	XmppServer.AppId = TEXT("Shuffl");
+	XmppServer.ServerAddr = TEXT("34.65.28.84");
+	XmppServer.Domain = TEXT("34.65.28.84");
+	XmppServer.ServerPort = 5222;
+
+	XmppConnection = FXmppModule::Get().CreateConnection(UserId);
+	XmppConnection->SetServer(XmppServer);
+
+	XmppConnection->OnLoginComplete().AddLambda(
+		[&](const FXmppUserJid& userJid, bool bWasSuccess, const FString& error) {
+			UE_LOG(LogShuffl, Warning, TEXT("Login UserJid=%s Success=%s Error=%s"),
+				*userJid.GetFullPath(), bWasSuccess ? TEXT("true") : TEXT("false"), *error);
+			if (!bWasSuccess) return;
+		//	if (!XmppConnection.IsValid() ||
+		//		XmppConnection->GetLoginStatus() != EXmppLoginStatus::LoggedIn) return;
+
+			FXmppUserPresence Presence;
+			Presence.bIsAvailable = true;
+			Presence.Status = EXmppPresenceStatus::Online;
+			Presence.StatusStr = (TEXT("Test rich presence status"));
+			XmppConnection->Presence()->UpdatePresence(Presence);
+
+			FXmppUserJid RecipientId(TEXT("p1"), XmppConnection->GetServer().Domain);
+			XmppConnection->PrivateChat()->SendChat(RecipientId, TEXT("Hello World!"));
+
+		//	XmppConnection->Logout();
+		//	FXmppModule::Get().RemoveConnection(XmppConnection.ToSharedRef());
+		}
+	);
+
+	XmppConnection->Login(UserId, Password);
 }

@@ -19,3 +19,5 @@
 
 #define make_sure(cond) \
 	if (!(ensure(cond))) return
+
+DECLARE_LOG_CATEGORY_EXTERN(LogShuffl, Warning, All);

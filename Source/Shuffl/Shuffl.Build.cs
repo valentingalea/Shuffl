@@ -29,7 +29,8 @@ public class Shuffl : ModuleRules
 
 		PrivateDependencyModuleNames.AddRange(new string[] {
 			"UMG", "Slate", "SlateCore",
-			"LevelSequence", "MovieScene"
+			"LevelSequence", "MovieScene",
+			"XMPP"
 		});
 	}
 }
