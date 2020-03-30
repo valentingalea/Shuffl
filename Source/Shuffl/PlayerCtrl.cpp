@@ -100,10 +100,6 @@ void APlayerCtrl::OnQuit()
 
 void APlayerCtrl::RequestNewThrow()
 {
-	if (auto sys = UGameSubSys::Get(this)) {
-		sys->XmppTest();
-	}
-
 	if (PlayMode == EPlayerCtrlMode::Setup && GetPuck()) return;
 	GetWorld()->GetAuthGameMode<AShufflCommonGameMode>()->NextTurn();
 }

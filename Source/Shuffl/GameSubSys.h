@@ -17,6 +17,8 @@
 
 #include "CoreMinimal.h"
 #include "Engine\Public\Subsystems\GameInstanceSubsystem.h"
+#include "Online/XMPP/Public/XmppConnection.h"
+#include "Online/XMPP/Public/XmppChat.h"
 
 #include "Def.h"
 
@@ -28,6 +30,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FEvent_ScoreChanged,
 							int, WinnerRoundScore);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FEvent_PlayersChangeTurn,
 							EPuckColor, NewColor);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FXmppEvent_Handshaken);
 
 UCLASS()
 class UGameSubSys : public UGameInstanceSubsystem
@@ -35,6 +38,8 @@ class UGameSubSys : public UGameInstanceSubsystem
 	GENERATED_BODY()
 
 public:
+	virtual void Initialize(FSubsystemCollectionBase&) override;
+
 	static UGameSubSys* Get(const UObject* ContextObject);
 
 	UPROPERTY(BlueprintAssignable)
@@ -49,5 +54,33 @@ public:
 	UFUNCTION(BlueprintPure)
 	static int ShufflGetWinningScore();
 
-	void XmppTest();
+//
+// XMPP TODO: extract out
+//
+	UFUNCTION(BlueprintCallable)
+	void XmppLogin(EPuckColor Color);
+	
+	UFUNCTION(BlueprintCallable)
+	void XmppLogout();
+	
+	UFUNCTION(BlueprintCallable)
+	void XmppHandshake();
+
+	UFUNCTION(BlueprintCallable)
+	void XmppStartGame();
+
+	void XmppOnLogin(const FXmppUserJid&, bool, const FString&);
+	void XmppOnChat(const TSharedRef<IXmppConnection>&,
+		const FXmppUserJid&,
+		const TSharedRef<FXmppChatMessage>&);
+
+	TSharedPtr<class IXmppConnection> XmppConnection;
+
+	EPuckColor XmppColor;
+	FString XmppSelfId;
+	FString XmppOtherId;
+
+	UPROPERTY(BlueprintAssignable)
+	FXmppEvent_Handshaken EventHandshaken;
+	bool XmppHandshaken = false;
 };
