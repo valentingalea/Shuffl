@@ -42,6 +42,25 @@ inline void DebugPrint(const FmtType& fmt, Types... args)
 #endif
 }
 
+#include <cstring>
+//NOTE: https://en.cppreference.com/w/cpp/numeric/bit_cast
+template <class To, class From>
+inline To bit_cast_generic(From src) noexcept
+{
+	static_assert(sizeof(To) == sizeof(From), "invalid bit cast");
+	To dst;
+	std::memcpy(&dst, &src, sizeof(To));
+	return dst;
+}
+inline int32 bit_cast(float f) noexcept
+{
+	return bit_cast_generic<int32>(f);
+}
+inline float bit_cast(int32 i) noexcept
+{
+	return bit_cast_generic<float>(i);
+}
+
 inline FHitResult ProjectScreenPoint(const APlayerCtrl *ctrl, const FVector2D& location)
 {
 	FHitResult hitResult;
@@ -273,7 +292,7 @@ void APlayerCtrl::ThrowPuck(FVector2D gestureVector, float velocity)
 
 	if (XMPP) {
 		auto sys = UGameSubSys::Get(this);
-		sys->XmppSend(FString::Printf(TEXT("/throw %3.6f %3.6f"), X, Y)); //TODO: think about precision
+		sys->XmppSend(FString::Printf(TEXT("/throw %i %i"), bit_cast(X), bit_cast(Y)));
 	}
 }
 
@@ -336,8 +355,7 @@ void APlayerCtrl::DoSlingshot()
 
 	if (XMPP) {
 		auto sys = UGameSubSys::Get(this);
-		sys->XmppSend(FString::Printf(TEXT("/throw %3.6f %3.6f"), f.X, f.Y));
-		//TODO: think about precision (also extract these out in vars)
+		sys->XmppSend(FString::Printf(TEXT("/throw %i %i"), bit_cast(f.X), bit_cast(f.Y)));
 	}
 }
 
@@ -362,9 +380,8 @@ void APlayerCtrl::MovePuckOnTouchPosition(FVector2D touchLocation)
 
 		if (XMPP) {
 			auto sys = UGameSubSys::Get(this);
-			sys->XmppSend(FString::Printf(TEXT("/move %3.6f %3.6f %3.6f"),
-				location.X, location.Y, location.Z));
-			//TODO: think about precision
+			sys->XmppSend(FString::Printf(TEXT("/move %i %i %i"),
+				bit_cast(location.X), bit_cast(location.Y), bit_cast(location.Z)));
 		}
 	}
 }
@@ -377,8 +394,8 @@ void APlayerCtrl::SwitchToDetailView()
 
 		for (auto i = TActorIterator<APuck>(GetWorld()); i; ++i) {
 			FVector p = i->GetActorLocation();
-			out += FString::Printf(TEXT(" %i %3.6f %3.6f %3.6f"),
-				i->TurnId, p.X, p.Y, p.Z);
+			out += FString::Printf(TEXT(" %i %i %i %i"),
+				i->TurnId, bit_cast(p.X), bit_cast(p.Y), bit_cast(p.Z));
 			num++;
 		}
 
@@ -463,16 +480,16 @@ void AXMPPPlayerCtrl::OnReceiveChat(const FString& msg)
 	}
 
 	if (args[0] == TEXT("/move")) {
-		float X = FCString::Atof(*args[1]);
-		float Y = FCString::Atof(*args[2]);
-		float Z = FCString::Atof(*args[3]);
+		float X = bit_cast(FCString::Atoi(*args[1]));
+		float Y = bit_cast(FCString::Atoi(*args[2]));
+		float Z = bit_cast(FCString::Atoi(*args[3]));
 		GetPuck()->MoveTo(FVector(X, Y, Z));
 		return;
 	}
 
 	if (args[0] == TEXT("/throw")) {
-		float X = FCString::Atof(*args[1]);
-		float Y = FCString::Atof(*args[2]);
+		float X = bit_cast(FCString::Atoi(*args[1]));
+		float Y = bit_cast(FCString::Atoi(*args[2]));
 		GetPuck()->ApplyThrow(FVector2D(X, Y));
 		return;
 	}
@@ -483,9 +500,9 @@ void AXMPPPlayerCtrl::OnReceiveChat(const FString& msg)
 		
 		for (int i = 2; i < 2 + num * 4;) {
 			int turnId = FCString::Atoi(*args[i++]);
-			float x = FCString::Atof(*args[i++]);
-			float y = FCString::Atof(*args[i++]);
-			float z = FCString::Atof(*args[i++]);
+			float x = bit_cast(FCString::Atoi(*args[i++]));
+			float y = bit_cast(FCString::Atoi(*args[i++]));
+			float z = bit_cast(FCString::Atoi(*args[i++]));
 			other_pos.Add(turnId, FVector(x, y, z));
 		}
 
@@ -497,7 +514,7 @@ void AXMPPPlayerCtrl::OnReceiveChat(const FString& msg)
 			const FVector other_p = *other_pos.Find(i->TurnId);
 			const FVector d = p - other_p;
 
-			FString dbg = FString::Printf(TEXT("%i: %1.3f %1.3f %1.3f"),
+			FString dbg = FString::Printf(TEXT("%i: %1.6f | %1.6f | %1.6f"),
 				i->TurnId, FMath::Abs(d.X), FMath::Abs(d.Y), FMath::Abs(d.Z));
 			GEngine->AddOnScreenDebugMessage(id++, 30/*sec*/, FColor::Green, dbg);
 			UE_LOG(LogShuffl, Warning, TEXT("%s"), *dbg);
