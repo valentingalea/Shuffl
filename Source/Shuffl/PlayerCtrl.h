@@ -31,6 +31,10 @@ class SHUFFL_API APlayerCtrl : public APlayerController
 public:
 	APlayerCtrl();
 
+	//TODO: better way - subclass? also choose a better name
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Setup)
+	bool XMPP = false;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Setup)
 	bool ARSetup = false;
 
@@ -141,4 +145,14 @@ class AAIPlayerCtrl : public APlayerCtrl
 public:
 	virtual void SetupInputComponent() override;
 	virtual void HandleNewThrow() override;
+};
+
+UCLASS()
+class AXMPPPlayerCtrl : public APlayerCtrl
+{
+	GENERATED_BODY()
+
+public:
+	virtual void SetupInputComponent() override;
+	void OnReceiveChat(const FString &);
 };

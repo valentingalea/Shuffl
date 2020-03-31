@@ -39,6 +39,7 @@ class UGameSubSys : public UGameInstanceSubsystem
 
 public:
 	virtual void Initialize(FSubsystemCollectionBase&) override;
+	virtual void Deinitialize() override;
 
 	static UGameSubSys* Get(const UObject* ContextObject);
 
@@ -57,6 +58,8 @@ public:
 //
 // XMPP TODO: extract out
 //
+	void XmppSend(const FString&);
+
 	UFUNCTION(BlueprintCallable)
 	void XmppLogin(EPuckColor Color);
 	

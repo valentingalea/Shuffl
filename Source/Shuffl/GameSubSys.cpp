@@ -14,8 +14,10 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 #include "GameSubSys.h"
-#include "Engine.h"
-#include "Engine\GameInstance.h"
+#include "Engine/Engine.h"
+#include "Engine/GameInstance.h"
+#include "Online/XMPP/Public/XmppModule.h"
+#include "Kismet/GameplayStatics.h"
 
 #include "Shuffl.h"
 #include "GameModes.h"
@@ -50,12 +52,8 @@ class APlayerController* UGameSubSys::ShufflGetActivePlayerCtrl(const UObject* W
 
 int UGameSubSys::ShufflGetWinningScore()
 {
-	return ERound::WinningScore;
+	return 5; //ERound::WinningScore;
 }
-
-#include "Online/XMPP/Public/XmppModule.h"
-
-#pragma optimize("", off)
 
 auto HandshakeMsg = TEXT("Hello World!");
 
@@ -96,10 +94,10 @@ void UGameSubSys::XmppOnLogin(const FXmppUserJid& userJid, bool bWasSuccess, con
 	}
 
 	//NOTE: can only set, not query as Epic didn't implement
-	FXmppUserPresence Presence;
-	Presence.bIsAvailable = true;
-	Presence.Status = EXmppPresenceStatus::Online;
-	XmppConnection->Presence()->UpdatePresence(Presence);
+	FXmppUserPresence presence;
+	presence.bIsAvailable = true;
+	presence.Status = EXmppPresenceStatus::Online;
+	XmppConnection->Presence()->UpdatePresence(presence);
 
 	XmppConnection->PrivateChat()->OnReceiveChat().AddUObject(this, &UGameSubSys::XmppOnChat);
 }
@@ -120,35 +118,74 @@ void UGameSubSys::XmppLogout()
 	FXmppModule::Get().RemoveConnection(XmppConnection.ToSharedRef());
 }
 
+#include "PlayerCtrl.h"
+
 void UGameSubSys::XmppOnChat(const TSharedRef<IXmppConnection>& connection,
 	const FXmppUserJid& fromJid,
 	const TSharedRef<FXmppChatMessage>& chatMsg)
 {
 	const auto& msg = chatMsg->Body;
 	UE_LOG(LogShuffl, Warning, TEXT("From: `%s` Msg: `%s`"), *fromJid.Id, *msg);
+
 	//TODO: reject older messages than login
+	
 	if (msg == HandshakeMsg) {
 		XmppHandshaken = true;
 		EventHandshaken.Broadcast();
 		return;
 	}
+	if (msg == TEXT("/travel")) {
+		UGameplayStatics::OpenLevel(this,
+			TEXT("L_Main"), //TODO: expose this out
+			true,
+			TEXT("game=/Game/GM_XMPP_Invited.GM_XMPP_Invited_C"));
+		return;
+	}
+
+	//cast to AXMMPPlayer and just call directly - TODO: later do event
+	if (auto* pc = Cast<AXMPPPlayerCtrl>(ShufflGetActivePlayerCtrl(this))) {
+		pc->OnReceiveChat(msg);
+	}
 }
 
-void UGameSubSys::XmppHandshake()
+void UGameSubSys::XmppSend(const FString& msg)
 {
 	make_sure(XmppConnection.IsValid());
-	//TODO: do 3 way TCP style to verify connection both ways
 
-	FXmppUserJid RecipientId(XmppOtherId, XmppConnection->GetServer().Domain);
-	XmppConnection->PrivateChat()->SendChat(RecipientId, HandshakeMsg);
+	FXmppUserJid to(XmppOtherId, XmppConnection->GetServer().Domain);
+	XmppConnection->PrivateChat()->SendChat(to, msg);
+}
+
+void UGameSubSys::XmppHandshake() //TODO: get rid of this and do the invite/accept idea
+{
+	make_sure(XmppConnection.IsValid());
+
+	FXmppUserJid to(XmppOtherId, XmppConnection->GetServer().Domain);
+	XmppConnection->PrivateChat()->SendChat(to, HandshakeMsg);
 }
 
 void UGameSubSys::XmppStartGame()
 {
 	make_sure(XmppConnection.IsValid());
-	if (!XmppHandshaken) return;
+//	if (!XmppHandshaken) return;
+
+	UGameplayStatics::OpenLevel(this,
+		TEXT("L_Main"), //TODO: expose this out
+		true,
+		TEXT("game=/Game/GM_XMPP_Sender.GM_XMPP_Sender_C"));
+
+	XmppSend(TEXT("/travel"));
 }
 
 void UGameSubSys::Initialize(FSubsystemCollectionBase& Collection)
 {
+}
+
+void UGameSubSys::Deinitialize()
+{
+	if (XmppConnection.IsValid() &&
+		XmppConnection->GetLoginStatus() == EXmppLoginStatus::LoggedIn)
+	{
+		XmppLogout();
+	}
 }

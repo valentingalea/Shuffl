@@ -15,8 +15,9 @@
 
 #include "PlayerCtrl.h"
 
-#include "EngineMinimal.h"
+#include "Engine/Engine.h"
 #include "EngineUtils.h"
+#include "TimerManager.h"
 #include "Components/InputComponent.h"
 #include "Camera/CameraActor.h"
 #include "GameFramework/PlayerStart.h"
@@ -100,7 +101,14 @@ void APlayerCtrl::OnQuit()
 
 void APlayerCtrl::RequestNewThrow()
 {
-	if (PlayMode == EPlayerCtrlMode::Setup && GetPuck()) return;
+	if (PlayMode == EPlayerCtrlMode::Setup) return;
+	//TODO: allow XMMPPlayer to request at any time?
+
+	if (XMPP) {
+		auto sys = UGameSubSys::Get(this);
+		auto* gameState = Cast<AShufflGameState>(GetWorld()->GetGameState());
+		sys->XmppSend(FString::Printf(TEXT("/turn %i"), gameState->GlobalTurnCounter));
+	}
 	GetWorld()->GetAuthGameMode<AShufflCommonGameMode>()->NextTurn();
 }
 
@@ -262,6 +270,11 @@ void APlayerCtrl::ThrowPuck(FVector2D gestureVector, float velocity)
 	GetPuck()->ApplyThrow(FVector2D(X, Y));
 
 	DebugPrint(TEXT("Vel %4.2f px/sec -- (%3.1f, %3.1f)"), velocity, X, Y);
+
+	if (XMPP) {
+		auto sys = UGameSubSys::Get(this);
+		sys->XmppSend(FString::Printf(TEXT("/throw %3.6f %3.6f"), X, Y)); //TODO: think about precision
+	}
 }
 
 float APlayerCtrl::CalculateSpin(FVector touchLocation)
@@ -320,6 +333,12 @@ void APlayerCtrl::DoSlingshot()
 	f *= FMath::Min(len, ThrowForceMax);
 	GetPuck()->ApplyThrow(f);
 	DebugPrint(TEXT("Sling %3.1f %3.1f"), f.X, f.Y);
+
+	if (XMPP) {
+		auto sys = UGameSubSys::Get(this);
+		sys->XmppSend(FString::Printf(TEXT("/throw %3.6f %3.6f"), f.X, f.Y));
+		//TODO: think about precision (also extract these out in vars)
+	}
 }
 
 void APlayerCtrl::MovePuckOnTouchPosition(FVector2D touchLocation)
@@ -340,11 +359,35 @@ void APlayerCtrl::MovePuckOnTouchPosition(FVector2D touchLocation)
 		//DrawDebugSphere(GetWorld(), location, 5, 4, FColor::Red, false, 3);
 
 		GetPuck()->MoveTo(location);
+
+		if (XMPP) {
+			auto sys = UGameSubSys::Get(this);
+			sys->XmppSend(FString::Printf(TEXT("/move %3.6f %3.6f %3.6f"),
+				location.X, location.Y, location.Z));
+			//TODO: think about precision
+		}
 	}
 }
 
 void APlayerCtrl::SwitchToDetailView()
 {
+	if (XMPP) {
+		FString out = TEXT("/debug ?");
+		int num = 0;
+
+		for (auto i = TActorIterator<APuck>(GetWorld()); i; ++i) {
+			FVector p = i->GetActorLocation();
+			out += FString::Printf(TEXT(" %i %3.6f %3.6f %3.6f"),
+				i->TurnId, p.X, p.Y, p.Z);
+			num++;
+		}
+
+		out = out.Replace(TEXT("?"), *FString::Printf(TEXT("%i"), num));
+
+		auto sys = UGameSubSys::Get(this);
+		sys->XmppSend(out);
+	}
+
 	if (!SceneProps.IsValid()) return;
 	SetViewTargetWithBlend(SceneProps->DetailViewCamera, 0.f);
 }
@@ -391,4 +434,74 @@ void AAIPlayerCtrl::HandleNewThrow()
 			GetPuck()->ApplyThrow(FVector2D(force, 0.f));
 		},
 		2.f/*sec*/, false);
+}
+
+void AXMPPPlayerCtrl::SetupInputComponent()
+{
+	APlayerController::SetupInputComponent();
+
+	InputComponent->BindAction("Quit", IE_Released, this, &AXMPPPlayerCtrl::OnQuit);
+	InputComponent->BindAction("Rethrow", IE_Released, this, &AXMPPPlayerCtrl::RequestNewThrow);
+}
+
+void AXMPPPlayerCtrl::OnReceiveChat(const FString& msg)
+{
+	TArray<FString> args;
+	msg.ParseIntoArrayWS(args);
+	make_sure(args.Num() > 1);
+
+	if (args[0] == TEXT("/turn")) {
+		auto* gameState = Cast<AShufflGameState>(GetWorld()->GetGameState());
+		int turnId = FCString::Atoi(*args[1]);
+		if (turnId == gameState->GlobalTurnCounter) {
+			GetWorld()->GetAuthGameMode<AShufflCommonGameMode>()->NextTurn();
+		} else {
+			UE_LOG(LogShuffl, Error, TEXT("Received bad turn %i vs %i"),
+				turnId, gameState->GlobalTurnCounter);
+		}
+		return;
+	}
+
+	if (args[0] == TEXT("/move")) {
+		float X = FCString::Atof(*args[1]);
+		float Y = FCString::Atof(*args[2]);
+		float Z = FCString::Atof(*args[3]);
+		GetPuck()->MoveTo(FVector(X, Y, Z));
+		return;
+	}
+
+	if (args[0] == TEXT("/throw")) {
+		float X = FCString::Atof(*args[1]);
+		float Y = FCString::Atof(*args[2]);
+		GetPuck()->ApplyThrow(FVector2D(X, Y));
+		return;
+	}
+
+	if (args[0] == TEXT("/debug")) {
+		TMap<int, FVector> other_pos;
+		int num = FCString::Atoi(*args[1]);
+		
+		for (int i = 2; i < 2 + num * 4;) {
+			int turnId = FCString::Atoi(*args[i++]);
+			float x = FCString::Atof(*args[i++]);
+			float y = FCString::Atof(*args[i++]);
+			float z = FCString::Atof(*args[i++]);
+			other_pos.Add(turnId, FVector(x, y, z));
+		}
+
+		static uint64 id = 0;
+		for (auto i = TActorIterator<APuck>(GetWorld()); i; ++i) {
+			if (!other_pos.Contains(i->TurnId)) continue;
+
+			const FVector p = i->GetActorLocation();
+			const FVector other_p = *other_pos.Find(i->TurnId);
+			const FVector d = p - other_p;
+
+			FString dbg = FString::Printf(TEXT("%i: %1.3f %1.3f %1.3f"),
+				i->TurnId, FMath::Abs(d.X), FMath::Abs(d.Y), FMath::Abs(d.Z));
+			GEngine->AddOnScreenDebugMessage(id++, 30/*sec*/, FColor::Green, dbg);
+			UE_LOG(LogShuffl, Warning, TEXT("%s"), *dbg);
+		}
+		return;
+	}
 }

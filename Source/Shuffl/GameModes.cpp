@@ -245,3 +245,30 @@ void AShufflAgainstAIGameMode::HandleMatchIsWaitingToStart()
 	p1->GetPlayerState<AShufflPlayerState>()->Color = EPuckColor::Red;
 	p2->GetPlayerState<AShufflPlayerState>()->Color = EPuckColor::Blue;
 }
+
+void AShufflXMPPGameMode::HandleMatchIsWaitingToStart()
+{
+	Super::Super::HandleMatchIsWaitingToStart();
+
+	auto iterator = GetWorld()->GetPlayerControllerIterator();
+	auto* p1 = Cast<APlayerCtrl>(*iterator);
+
+	// spawn a second player controller tied to the same local player
+	auto* p2 = Cast<APlayerCtrl>(SpawnPlayerControllerCommon(
+		ROLE_SimulatedProxy, // so it gets localplayer flag
+		p1->K2_GetActorLocation(), p1->K2_GetActorRotation(),
+		ReplaySpectatorPlayerControllerClass));
+	GetWorld()->AddController(p2);
+	p2->Player = p1->Player;
+
+//	if (UGameplayStatics::HasOption(Options, TEXT("xmpphost"))
+	p1->GetPlayerState<AShufflPlayerState>()->Color = EPuckColor::Red;
+	p2->GetPlayerState<AShufflPlayerState>()->Color = EPuckColor::Blue;
+
+	if (!Cast<AXMPPPlayerCtrl>(p1)) {
+		p1->XMPP = true;
+	}
+	if (!Cast<AXMPPPlayerCtrl>(p2)) {
+		p2->XMPP = true;
+	}
+}
