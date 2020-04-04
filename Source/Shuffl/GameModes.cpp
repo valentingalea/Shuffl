@@ -27,6 +27,7 @@
 #include "PlayerCtrl.h"
 #include "ScoringVolume.h"
 #include "GameSubSys.h"
+#include "XMPP.h"
 
 namespace MatchState
 {
@@ -248,27 +249,23 @@ void AShufflAgainstAIGameMode::HandleMatchIsWaitingToStart()
 
 void AShufflXMPPGameMode::HandleMatchIsWaitingToStart()
 {
-	Super::Super::HandleMatchIsWaitingToStart();
+	Super::HandleMatchIsWaitingToStart();
 
 	auto iterator = GetWorld()->GetPlayerControllerIterator();
-	auto* p1 = Cast<APlayerCtrl>(*iterator);
+	auto* p1 = Cast<AXMPPPlayerCtrl>(*iterator);
+	ensure(p1);
 
-	// spawn a second player controller tied to the same local player
-	auto* p2 = Cast<APlayerCtrl>(SpawnPlayerControllerCommon(
-		ROLE_SimulatedProxy, // so it gets localplayer flag
-		p1->K2_GetActorLocation(), p1->K2_GetActorRotation(),
-		ReplaySpectatorPlayerControllerClass));
-	GetWorld()->AddController(p2);
-	p2->Player = p1->Player;
+	iterator++;
+	auto* p2 = Cast<AXMPPPlayerCtrl>(*iterator);
+	ensure(p2);
 
-//	if (UGameplayStatics::HasOption(Options, TEXT("xmpphost"))
-	p1->GetPlayerState<AShufflPlayerState>()->Color = EPuckColor::Red;
-	p2->GetPlayerState<AShufflPlayerState>()->Color = EPuckColor::Blue;
-
-	if (!Cast<AXMPPPlayerCtrl>(p1)) {
-		p1->XMPP = true;
+	if (UGameplayStatics::HasOption(OptionsString, XMPPGameMode::Host)) {
+		p1->XMPPState = EXMPPMultiplayerState::Broadcast;
+		p2->XMPPState = EXMPPMultiplayerState::Spectate;
 	}
-	if (!Cast<AXMPPPlayerCtrl>(p2)) {
-		p2->XMPP = true;
+
+	if (UGameplayStatics::HasOption(OptionsString, XMPPGameMode::Invited)) {
+		p1->XMPPState = EXMPPMultiplayerState::Spectate;
+		p2->XMPPState = EXMPPMultiplayerState::Broadcast;
 	}
 }

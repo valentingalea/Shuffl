@@ -42,25 +42,6 @@ inline void DebugPrint(const FmtType& fmt, Types... args)
 #endif
 }
 
-#include <cstring>
-//NOTE: https://en.cppreference.com/w/cpp/numeric/bit_cast
-template <class To, class From>
-inline To bit_cast_generic(From src) noexcept
-{
-	static_assert(sizeof(To) == sizeof(From), "invalid bit cast");
-	To dst;
-	std::memcpy(&dst, &src, sizeof(To));
-	return dst;
-}
-inline int32 bit_cast(float f) noexcept
-{
-	return bit_cast_generic<int32>(f);
-}
-inline float bit_cast(int32 i) noexcept
-{
-	return bit_cast_generic<float>(i);
-}
-
 inline FHitResult ProjectScreenPoint(const APlayerCtrl *ctrl, const FVector2D& location)
 {
 	FHitResult hitResult;
@@ -121,13 +102,7 @@ void APlayerCtrl::OnQuit()
 void APlayerCtrl::RequestNewThrow()
 {
 	if (PlayMode == EPlayerCtrlMode::Setup) return;
-	//TODO: allow XMMPPlayer to request at any time?
 
-	if (XMPP) {
-		auto sys = UGameSubSys::Get(this);
-		auto* gameState = Cast<AShufflGameState>(GetWorld()->GetGameState());
-		sys->XmppSend(FString::Printf(TEXT("/turn %i"), gameState->GlobalTurnCounter));
-	}
 	GetWorld()->GetAuthGameMode<AShufflCommonGameMode>()->NextTurn();
 }
 
@@ -262,8 +237,8 @@ void APlayerCtrl::ConsumeTouchOff(const ETouchIndex::Type fingerIndex, const FVe
 		return;
 	}
 
-	if (velocity < EscapeVelocity || 
-			angle < 0.349f/*20 deg*/ || angle > 2.793f/*160 deg*/) {
+	if (velocity < EscapeVelocity ||
+		angle < 0.349f/*20 deg*/ || angle > 2.793f/*160 deg*/) {
 		MovePuckOnTouchPosition(gestureEndPoint);
 		PlayMode = EPlayerCtrlMode::Setup;
 	} else {
@@ -273,7 +248,7 @@ void APlayerCtrl::ConsumeTouchOff(const ETouchIndex::Type fingerIndex, const FVe
 	}
 }
 
-void APlayerCtrl::ThrowPuck(FVector2D gestureVector, float velocity)
+FVector2D APlayerCtrl::ThrowPuck(FVector2D gestureVector, float velocity)
 {
 	gestureVector.Normalize();
 	gestureVector *= velocity / (50.f - ThrowForceScaling);
@@ -286,14 +261,11 @@ void APlayerCtrl::ThrowPuck(FVector2D gestureVector, float velocity)
 		GetWorldTimerManager().SetTimer(SpinTimer, this, &APlayerCtrl::EnterSpinMode,
 			1.f / 60.f, false);
 	}
+	
 	GetPuck()->ApplyThrow(FVector2D(X, Y));
 
 	DebugPrint(TEXT("Vel %4.2f px/sec -- (%3.1f, %3.1f)"), velocity, X, Y);
-
-	if (XMPP) {
-		auto sys = UGameSubSys::Get(this);
-		sys->XmppSend(FString::Printf(TEXT("/throw %i %i"), bit_cast(X), bit_cast(Y)));
-	}
+	return FVector2D(X, Y);
 }
 
 float APlayerCtrl::CalculateSpin(FVector touchLocation)
@@ -344,22 +316,20 @@ void APlayerCtrl::PreviewSlingshot(FVector touchLocation)
 	}
 }
 
-void APlayerCtrl::DoSlingshot()
+FVector2D APlayerCtrl::DoSlingshot()
 {
 	auto f = FVector2D(SlingshotDir) * SlingshotForceScaling;
 	auto len = f.Size();
 	f.Normalize();
 	f *= FMath::Min(len, ThrowForceMax);
+	
 	GetPuck()->ApplyThrow(f);
-	DebugPrint(TEXT("Sling %3.1f %3.1f"), f.X, f.Y);
 
-	if (XMPP) {
-		auto sys = UGameSubSys::Get(this);
-		sys->XmppSend(FString::Printf(TEXT("/throw %i %i"), bit_cast(f.X), bit_cast(f.Y)));
-	}
+	DebugPrint(TEXT("Sling %3.1f %3.1f"), f.X, f.Y);
+	return f;
 }
 
-void APlayerCtrl::MovePuckOnTouchPosition(FVector2D touchLocation)
+FVector APlayerCtrl::MovePuckOnTouchPosition(FVector2D touchLocation)
 {
 	FHitResult hitResult = ProjectScreenPoint(this, touchLocation);
 	if (hitResult.bBlockingHit)
@@ -377,34 +347,14 @@ void APlayerCtrl::MovePuckOnTouchPosition(FVector2D touchLocation)
 		//DrawDebugSphere(GetWorld(), location, 5, 4, FColor::Red, false, 3);
 
 		GetPuck()->MoveTo(location);
-
-		if (XMPP) {
-			auto sys = UGameSubSys::Get(this);
-			sys->XmppSend(FString::Printf(TEXT("/move %i %i %i"),
-				bit_cast(location.X), bit_cast(location.Y), bit_cast(location.Z)));
-		}
+		return location;
+	} else {
+		return StartingPoint;
 	}
 }
 
 void APlayerCtrl::SwitchToDetailView()
 {
-	if (XMPP) {
-		FString out = TEXT("/debug ?");
-		int num = 0;
-
-		for (auto i = TActorIterator<APuck>(GetWorld()); i; ++i) {
-			FVector p = i->GetActorLocation();
-			out += FString::Printf(TEXT(" %i %i %i %i"),
-				i->TurnId, bit_cast(p.X), bit_cast(p.Y), bit_cast(p.Z));
-			num++;
-		}
-
-		out = out.Replace(TEXT("?"), *FString::Printf(TEXT("%i"), num));
-
-		auto sys = UGameSubSys::Get(this);
-		sys->XmppSend(out);
-	}
-
 	if (!SceneProps.IsValid()) return;
 	SetViewTargetWithBlend(SceneProps->DetailViewCamera, 0.f);
 }
@@ -451,74 +401,4 @@ void AAIPlayerCtrl::HandleNewThrow()
 			GetPuck()->ApplyThrow(FVector2D(force, 0.f));
 		},
 		2.f/*sec*/, false);
-}
-
-void AXMPPPlayerCtrl::SetupInputComponent()
-{
-	APlayerController::SetupInputComponent();
-
-	InputComponent->BindAction("Quit", IE_Released, this, &AXMPPPlayerCtrl::OnQuit);
-	InputComponent->BindAction("Rethrow", IE_Released, this, &AXMPPPlayerCtrl::RequestNewThrow);
-}
-
-void AXMPPPlayerCtrl::OnReceiveChat(const FString& msg)
-{
-	TArray<FString> args;
-	msg.ParseIntoArrayWS(args);
-	make_sure(args.Num() > 1);
-
-	if (args[0] == TEXT("/turn")) {
-		auto* gameState = Cast<AShufflGameState>(GetWorld()->GetGameState());
-		int turnId = FCString::Atoi(*args[1]);
-		if (turnId == gameState->GlobalTurnCounter) {
-			GetWorld()->GetAuthGameMode<AShufflCommonGameMode>()->NextTurn();
-		} else {
-			UE_LOG(LogShuffl, Error, TEXT("Received bad turn %i vs %i"),
-				turnId, gameState->GlobalTurnCounter);
-		}
-		return;
-	}
-
-	if (args[0] == TEXT("/move")) {
-		float X = bit_cast(FCString::Atoi(*args[1]));
-		float Y = bit_cast(FCString::Atoi(*args[2]));
-		float Z = bit_cast(FCString::Atoi(*args[3]));
-		GetPuck()->MoveTo(FVector(X, Y, Z));
-		return;
-	}
-
-	if (args[0] == TEXT("/throw")) {
-		float X = bit_cast(FCString::Atoi(*args[1]));
-		float Y = bit_cast(FCString::Atoi(*args[2]));
-		GetPuck()->ApplyThrow(FVector2D(X, Y));
-		return;
-	}
-
-	if (args[0] == TEXT("/debug")) {
-		TMap<int, FVector> other_pos;
-		int num = FCString::Atoi(*args[1]);
-		
-		for (int i = 2; i < 2 + num * 4;) {
-			int turnId = FCString::Atoi(*args[i++]);
-			float x = bit_cast(FCString::Atoi(*args[i++]));
-			float y = bit_cast(FCString::Atoi(*args[i++]));
-			float z = bit_cast(FCString::Atoi(*args[i++]));
-			other_pos.Add(turnId, FVector(x, y, z));
-		}
-
-		static uint64 id = 0;
-		for (auto i = TActorIterator<APuck>(GetWorld()); i; ++i) {
-			if (!other_pos.Contains(i->TurnId)) continue;
-
-			const FVector p = i->GetActorLocation();
-			const FVector other_p = *other_pos.Find(i->TurnId);
-			const FVector d = p - other_p;
-
-			FString dbg = FString::Printf(TEXT("%i: %1.6f | %1.6f | %1.6f"),
-				i->TurnId, FMath::Abs(d.X), FMath::Abs(d.Y), FMath::Abs(d.Z));
-			GEngine->AddOnScreenDebugMessage(id++, 30/*sec*/, FColor::Green, dbg);
-			UE_LOG(LogShuffl, Warning, TEXT("%s"), *dbg);
-		}
-		return;
-	}
 }

@@ -17,10 +17,9 @@
 
 #include "CoreMinimal.h"
 #include "Engine\Public\Subsystems\GameInstanceSubsystem.h"
-#include "Online/XMPP/Public/XmppConnection.h"
-#include "Online/XMPP/Public/XmppChat.h"
 
 #include "Def.h"
+#include "XMPP.h"
 
 #include "GameSubSys.generated.h"
 
@@ -30,7 +29,6 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FEvent_ScoreChanged,
 							int, WinnerRoundScore);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FEvent_PlayersChangeTurn,
 							EPuckColor, NewColor);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FXmppEvent_Handshaken);
 
 UCLASS()
 class UGameSubSys : public UGameInstanceSubsystem
@@ -42,6 +40,7 @@ public:
 	virtual void Deinitialize() override;
 
 	static UGameSubSys* Get(const UObject* ContextObject);
+	static UObject* GetWorldContext();
 
 	UPROPERTY(BlueprintAssignable)
 	FEvent_ScoreChanged ScoreChanged;
@@ -55,35 +54,15 @@ public:
 	UFUNCTION(BlueprintPure)
 	static int ShufflGetWinningScore();
 
-//
-// XMPP TODO: extract out
-//
-	void XmppSend(const FString&);
+	UFUNCTION(BlueprintCallable, meta = (WorldContext = "WorldContextObject"))
+	static void XMPPLogin(const UObject* WorldContextObject, EPuckColor Color);
 
-	UFUNCTION(BlueprintCallable)
-	void XmppLogin(EPuckColor Color);
-	
-	UFUNCTION(BlueprintCallable)
-	void XmppLogout();
-	
-	UFUNCTION(BlueprintCallable)
-	void XmppHandshake();
+	UFUNCTION(BlueprintCallable, meta = (WorldContext = "WorldContextObject"))
+	static void XMPPLogout(const UObject* WorldContextObject);
 
-	UFUNCTION(BlueprintCallable)
-	void XmppStartGame();
+	UFUNCTION(BlueprintCallable, meta = (WorldContext = "WorldContextObject"))
+	static void XMPPStartGame(const UObject* WorldContextObject);
 
-	void XmppOnLogin(const FXmppUserJid&, bool, const FString&);
-	void XmppOnChat(const TSharedRef<IXmppConnection>&,
-		const FXmppUserJid&,
-		const TSharedRef<FXmppChatMessage>&);
-
-	TSharedPtr<class IXmppConnection> XmppConnection;
-
-	EPuckColor XmppColor;
-	FString XmppSelfId;
-	FString XmppOtherId;
-
-	UPROPERTY(BlueprintAssignable)
-	FXmppEvent_Handshaken EventHandshaken;
-	bool XmppHandshaken = false;
+	UPROPERTY()
+	FShufflXMPPService XMPP;
 };

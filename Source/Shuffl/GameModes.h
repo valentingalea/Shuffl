@@ -102,7 +102,7 @@ public:
 	virtual void HandleMatchIsWaitingToStart() override;
 };
 
-UCLASS() //TODO: find a way to reference these otherwise the cooker/packer ignores them
+UCLASS()
 class SHUFFL_API AShufflXMPPGameMode : public AShuffl2PlayersGameMode
 {
 	GENERATED_BODY()

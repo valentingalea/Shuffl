@@ -31,10 +31,6 @@ class SHUFFL_API APlayerCtrl : public APlayerController
 public:
 	APlayerCtrl();
 
-	//TODO: better way - subclass? also choose a better name
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Setup)
-	bool XMPP = false;
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Setup)
 	bool ARSetup = false;
 
@@ -73,13 +69,13 @@ public:
 	float SlingshotForceScaling = 5.f;
 
 	UFUNCTION(BlueprintCallable)
-	void RequestNewThrow();
+	virtual void RequestNewThrow();
 
 	UFUNCTION(BlueprintCallable)
-	void SwitchToDetailView();
+	virtual void SwitchToDetailView();
 
 	UFUNCTION(BlueprintCallable)
-	void SwitchToPlayView();
+	virtual void SwitchToPlayView();
 
 //
 // GameMode interface (in true net play these would be RPC's)
@@ -94,13 +90,12 @@ protected:
 	void OnQuit();
 
 	APuck* GetPuck();
-	void MovePuckOnTouchPosition(FVector2D);
+	virtual FVector MovePuckOnTouchPosition(FVector2D);
 
 	FVector StartingPoint = FVector::ZeroVector;
 	TWeakObjectPtr<class ASceneProps> SceneProps;
 	EPlayerCtrlMode PlayMode = EPlayerCtrlMode::Setup;
 
-private:
 	void ConsumeTouchOn(const ETouchIndex::Type, const FVector);
 	void ConsumeTouchRepeat(const ETouchIndex::Type, const FVector);
 	void ConsumeTouchOff(const ETouchIndex::Type, const FVector);
@@ -109,7 +104,7 @@ private:
 //
 // Flick mode
 //
-	void ThrowPuck(FVector2D, float);
+	virtual FVector2D ThrowPuck(FVector2D, float);
 	float ThrowStartTime = 0.f;
 	FVector2D ThrowStartPoint = FVector2D::ZeroVector;
 	FVector2D SpinStartPoint = FVector2D::ZeroVector;
@@ -117,8 +112,8 @@ private:
 //
 // Spin mode
 //
-	void EnterSpinMode();
-	void ExitSpinMode(float);
+	virtual void EnterSpinMode();
+	virtual void ExitSpinMode(float);
 	float CalculateSpin(FVector);
 	float SpinAmount = 0.f;
 	FTimerHandle SpinTimer;
@@ -128,7 +123,7 @@ private:
 //
 	FVector SlingshotDir = FVector::ZeroVector;
 	void PreviewSlingshot(FVector);
-	void DoSlingshot();
+	virtual FVector2D DoSlingshot();
 };
 
 inline APuck* APlayerCtrl::GetPuck()
@@ -147,12 +142,35 @@ public:
 	virtual void HandleNewThrow() override;
 };
 
+UENUM(BlueprintType)
+enum class EXMPPMultiplayerState: uint8
+{
+	Broadcast,
+	Spectate
+};
+
 UCLASS()
 class AXMPPPlayerCtrl : public APlayerCtrl
 {
 	GENERATED_BODY()
 
 public:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Setup)
+	EXMPPMultiplayerState XMPPState = EXMPPMultiplayerState::Broadcast;
+
+	virtual void BeginPlay() override;
 	virtual void SetupInputComponent() override;
-	void OnReceiveChat(const FString &);
+
+	virtual void RequestNewThrow() override;
+	virtual FVector MovePuckOnTouchPosition(FVector2D) override;
+	virtual FVector2D ThrowPuck(FVector2D, float) override;
+//	virtual void ExitSpinMode(float) override; 
+//TODO: spin
+	virtual FVector2D DoSlingshot() override;
+
+	void OnReceiveChat(const FString&);
+	void Debug();
+
+private:
+	struct FShufflXMPPService* XMPP;
 };
