@@ -59,7 +59,7 @@ inline void DebugPrint(const FmtType& fmt, Types... args)
 {
 	static uint64 id = 0;
 	GEngine->AddOnScreenDebugMessage(id++, 5/*sec*/, FColor::Green,
-		FString::Printf(fmt, args...), false/*newer on top*/, FVector2D(2, 2)/*scale*/);
+		FString::Printf(fmt, args...), false/*newer on top*/, FVector2D(1.5f, 1.5f)/*scale*/);
 }
 
 void AXMPPPlayerCtrl::BeginPlay()
@@ -97,7 +97,7 @@ void AXMPPPlayerCtrl::RequestNewThrow()
 
 FVector AXMPPPlayerCtrl::MovePuckOnTouchPosition(FVector2D touchLocation)
 {
-	auto location = MovePuckOnTouchPosition(touchLocation);
+	auto location = Super::MovePuckOnTouchPosition(touchLocation);
 
 	if (XMPPState == EXMPPMultiplayerState::Broadcast) {
 		XMPP->SendChat(FString::Printf(TEXT("%s %i %i %i"),
@@ -138,8 +138,6 @@ void AXMPPPlayerCtrl::OnReceiveChat(const FString& msg)
 	make_sure(args.Num() > 1);
 	const FString &cmd = args[0];
 
-	ensure(XMPPState == EXMPPMultiplayerState::Spectate);
-
 	if (cmd == ChatCmd::NextTurn) {
 		auto* gameState = Cast<AShufflGameState>(GetWorld()->GetGameState());
 		int turnId = FCString::Atoi(*args[1]);
@@ -156,6 +154,8 @@ void AXMPPPlayerCtrl::OnReceiveChat(const FString& msg)
 	}
 
 	if (cmd == ChatCmd::Move) {
+		ensure(XMPPState == EXMPPMultiplayerState::Spectate);
+
 		float X = bit_cast(FCString::Atoi(*args[1]));
 		float Y = bit_cast(FCString::Atoi(*args[2]));
 		float Z = bit_cast(FCString::Atoi(*args[3]));
@@ -168,6 +168,8 @@ void AXMPPPlayerCtrl::OnReceiveChat(const FString& msg)
 	}
 
 	if (cmd == ChatCmd::Throw) {
+		ensure(XMPPState == EXMPPMultiplayerState::Spectate);
+
 		float X = bit_cast(FCString::Atoi(*args[1]));
 		float Y = bit_cast(FCString::Atoi(*args[2]));
 		DebugPrint(TEXT("%s (%f) (%f)"), *cmd, X, Y);
