@@ -70,8 +70,8 @@ void FShufflXMPPService::OnLogin(const FXmppUserJid& userJid, bool bWasSuccess, 
 
 void FShufflXMPPService::Logout()
 {
-	make_sure(Connection.IsValid());
-	make_sure(Connection->GetLoginStatus() == EXmppLoginStatus::LoggedIn);
+	if (!(Connection.IsValid() && 
+		(Connection->GetLoginStatus() == EXmppLoginStatus::LoggedIn))) return;
 
 	Connection->OnLogoutComplete().AddLambda(
 		[](const FXmppUserJid& userJid, bool bWasSuccess, const FString& /*unused*/) {
