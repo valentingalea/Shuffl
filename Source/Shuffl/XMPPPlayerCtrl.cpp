@@ -147,7 +147,7 @@ void AXMPPPlayerCtrl::OnReceiveChat(const FString& msg)
 			GetWorld()->GetAuthGameMode<AShufflCommonGameMode>()->NextTurn();
 		} else {
 			UE_LOG(LogShuffl, Error, TEXT("Received bad turn %i vs %i"),
-				turnId, gameState->GlobalTurnCounter);
+				turnId, gameState->GlobalTurnCounter); //TODO: add all this log info on screen as well
 		}
 
 		return;
@@ -161,8 +161,12 @@ void AXMPPPlayerCtrl::OnReceiveChat(const FString& msg)
 		float Z = bit_cast(FCString::Atoi(*args[3]));
 		DebugPrint(TEXT("%s (%f) (%f) (%f)"), *cmd, X, Y, Z);
 
-		GetPuck()->MoveTo(FVector(X, Y, Z));
-		PlayMode = EPlayerCtrlMode::Setup;
+		if (GetPuck()) {
+			GetPuck()->MoveTo(FVector(X, Y, Z));
+			PlayMode = EPlayerCtrlMode::Setup;
+		} else {
+			UE_LOG(LogShuffl, Error, _TEXT("received Move cmd when puck not spawned!"));
+		}
 
 		return;
 	}
@@ -179,8 +183,12 @@ void AXMPPPlayerCtrl::OnReceiveChat(const FString& msg)
 			return;
 		}
 
-		GetPuck()->ApplyThrow(FVector2D(X, Y));
-		PlayMode = EPlayerCtrlMode::Observe;
+		if (GetPuck()) {
+			GetPuck()->ApplyThrow(FVector2D(X, Y));
+			PlayMode = EPlayerCtrlMode::Observe;
+		} else {
+			UE_LOG(LogShuffl, Error, _TEXT("received Throw cmd when puck not spawned!"));
+		}
 
 		return;
 	}

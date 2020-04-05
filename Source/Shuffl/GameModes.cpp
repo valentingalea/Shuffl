@@ -259,13 +259,24 @@ void AShufflXMPPGameMode::HandleMatchIsWaitingToStart()
 	auto* p2 = Cast<AXMPPPlayerCtrl>(*iterator);
 	ensure(p2);
 
+	constexpr auto PUCK = TEXT("puck"); //TODO: get rid of this of extract var out
+	ensure(UGameplayStatics::HasOption(OptionsString, PUCK));
+	auto startPuckColor = StringToPuckColor(*UGameplayStatics::ParseOption(OptionsString, PUCK));
+	
+	//TODO: this is completely invalid as it's executed too late and the PC has input initialized 
 	if (UGameplayStatics::HasOption(OptionsString, XMPPGameMode::Host)) {
 		p1->XMPPState = EXMPPMultiplayerState::Broadcast;
 		p2->XMPPState = EXMPPMultiplayerState::Spectate;
+
+		p1->GetPlayerState<AShufflPlayerState>()->Color = startPuckColor;
+		p2->GetPlayerState<AShufflPlayerState>()->Color = OppositePuckColor(startPuckColor);
 	}
 
 	if (UGameplayStatics::HasOption(OptionsString, XMPPGameMode::Invited)) {
 		p1->XMPPState = EXMPPMultiplayerState::Spectate;
 		p2->XMPPState = EXMPPMultiplayerState::Broadcast;
+
+		p1->GetPlayerState<AShufflPlayerState>()->Color = OppositePuckColor(startPuckColor);
+		p2->GetPlayerState<AShufflPlayerState>()->Color = startPuckColor;
 	}
 }
