@@ -135,6 +135,9 @@ void AShufflPracticeGameMode::HandleMatchHasStarted()
 
 void AShufflPracticeGameMode::NextTurn()
 {
+	auto* game_state = GetGameState<AShufflGameState>();
+	game_state->GlobalTurnCounter++;
+
 	auto iterator = GetWorld()->GetPlayerControllerIterator(); 
 	auto* controller = Cast<APlayerCtrl>(*iterator);
 	controller->HandleNewThrow();
