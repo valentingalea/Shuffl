@@ -145,9 +145,9 @@ void FShufflXMPPService::OnChat(const TSharedRef<IXmppConnection>& connection,
 		}
 
 		UGameplayStatics::OpenLevel(sys->GetWorldContext(),
-			TEXT("L_Main"), true/*absolute travel*/,
-			FString::Printf(TEXT("game=%s?%s?puck=%s"), XMPPGameMode::Name,
-				XMPPGameMode::Invited, PuckColorToString(Color)));
+			XMPPGameMode::Level, true/*absolute travel*/,
+			FString::Printf(TEXT("game=%s?%s?puck=%s"),
+				XMPPGameMode::Name, XMPPGameMode::Invited, PuckColorToString(Color)));
 
 		SendChat(TEXT("/travel"));
 		return;
@@ -155,9 +155,9 @@ void FShufflXMPPService::OnChat(const TSharedRef<IXmppConnection>& connection,
 
 	if (cmd == TEXT("/travel")) {	
 		UGameplayStatics::OpenLevel(sys->GetWorldContext(),
-			TEXT("L_Main"), true/*absolute travel*/,
-			FString::Printf(TEXT("game=%s?%s?puck=%s"), XMPPGameMode::Name, 
-				XMPPGameMode::Host, PuckColorToString(Color)));
+			XMPPGameMode::Level, true/*absolute travel*/,
+			FString::Printf(TEXT("game=%s?%s?puck=%s"), 
+				XMPPGameMode::Name, XMPPGameMode::Host, PuckColorToString(Color)));
 		return;
 	}
 

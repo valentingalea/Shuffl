@@ -23,11 +23,12 @@
 
 #include "XMPP.generated.h"
 
-namespace XMPPGameMode
+namespace XMPPGameMode //TODO: move these to .ini config
 {
 	constexpr static auto Host = TEXT("xmpphost");
 	constexpr static auto Invited = TEXT("xmppinvited");
-	constexpr static auto Name = TEXT("/Game/GM_XMPP.GM_XMPP_C");
+	constexpr static auto Level = TEXT("L_Main");
+	constexpr static auto Name = TEXT("/Game/Play/GM_XMPP.GM_XMPP_C");
 };
 
 USTRUCT()
