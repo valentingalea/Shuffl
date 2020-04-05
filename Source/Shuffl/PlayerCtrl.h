@@ -23,7 +23,7 @@
 
 #include "PlayerCtrl.generated.h"
 
-UCLASS(hidecategories = (Actor, "Actor Tick", Input, Game, "Mouse Interface", "Cheat Manager", LOD, Cooking))
+UCLASS(Config = Game, hidecategories = (Actor, "Actor Tick", Input, Game, "Mouse Interface", "Cheat Manager", LOD, Cooking))
 class SHUFFL_API APlayerCtrl : public APlayerController
 {
 	GENERATED_BODY()
@@ -34,7 +34,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Setup)
 	bool ARSetup = false;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Setup)
+	UPROPERTY(Config, VisibleDefaultsOnly, BlueprintReadOnly, Category = Setup)
 	UClass* PawnClass;
 
 	/** axis of allowed puck placement */

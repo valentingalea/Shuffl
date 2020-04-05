@@ -52,6 +52,8 @@ inline FHitResult ProjectScreenPoint(const APlayerCtrl *ctrl, const FVector2D& l
 
 APlayerCtrl::APlayerCtrl()
 {
+	LoadConfig(APlayerCtrl::StaticClass());
+
 	bShowMouseCursor = true;
 }
 
