@@ -49,9 +49,9 @@ inline float bit_cast(int32 i) noexcept
 
 namespace ChatCmd
 {
-	static constexpr TCHAR* NextTurn = TEXT("/turn");
-	static constexpr TCHAR* Throw = TEXT("/throw");
-	static constexpr TCHAR* Move = TEXT("/move");
+	static constexpr auto NextTurn = TEXT("/turn");
+	static constexpr auto Throw = TEXT("/throw");
+	static constexpr auto Move = TEXT("/move");
 }
 
 template <typename FmtType, typename... Types>
@@ -165,7 +165,7 @@ void AXMPPPlayerCtrl::OnReceiveChat(const FString& msg)
 			GetPuck()->MoveTo(FVector(X, Y, Z));
 			PlayMode = EPlayerCtrlMode::Setup;
 		} else {
-			UE_LOG(LogShuffl, Error, _TEXT("received Move cmd when puck not spawned!"));
+			UE_LOG(LogShuffl, Error, TEXT("received Move cmd when puck not spawned!"));
 		}
 
 		return;
@@ -187,7 +187,7 @@ void AXMPPPlayerCtrl::OnReceiveChat(const FString& msg)
 			GetPuck()->ApplyThrow(FVector2D(X, Y));
 			PlayMode = EPlayerCtrlMode::Observe;
 		} else {
-			UE_LOG(LogShuffl, Error, _TEXT("received Throw cmd when puck not spawned!"));
+			UE_LOG(LogShuffl, Error, TEXT("received Throw cmd when puck not spawned!"));
 		}
 
 		return;
