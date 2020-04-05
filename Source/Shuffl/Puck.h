@@ -22,7 +22,7 @@
 
 #include "Puck.generated.h"
 
-UCLASS()
+UCLASS(Config = Game)
 class SHUFFL_API APuck : public APawn
 {
 	GENERATED_BODY()
@@ -36,7 +36,7 @@ public:
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = Puck)
 	float Radius = 2.5f; //cm
 
-	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = Setup)
+	UPROPERTY(Config, VisibleDefaultsOnly, BlueprintReadOnly, Category = Setup)
 	UClass* PuckMeshClass;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Setup)

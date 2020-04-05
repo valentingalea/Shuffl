@@ -32,10 +32,7 @@
 // Sets default values
 APuck::APuck()
 {
-	// official documentation warns against this practice https://docs.unrealengine.com/en-US/Resources/SampleGames/ARPG/BalancingBlueprintAndCPP/index.html
-	// here it's used to make sure the the "look at" class is fixed and save recreating it
-	static ConstructorHelpers::FClassFinder<UStaticMeshComponent> puck(TEXT("/Game/BPC_Puck"));
-	PuckMeshClass = puck.Class;
+	LoadConfig(APuck::StaticClass());
 	make_sure(PuckMeshClass);
 
 	// this is the best way to create a component from a custom UClass (Blueprint one in this case)
