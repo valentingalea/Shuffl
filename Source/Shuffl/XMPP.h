@@ -23,14 +23,6 @@
 
 #include "XMPP.generated.h"
 
-namespace XMPPGameMode //TODO: move these to .ini config
-{
-	constexpr static auto Host = TEXT("xmpphost");
-	constexpr static auto Invited = TEXT("xmppinvited");
-	constexpr static auto Level = TEXT("L_Main");
-	constexpr static auto Name = TEXT("/Game/Play/GM_XMPP.GM_XMPP_C");
-};
-
 USTRUCT()
 struct FShufflXMPPService
 {
@@ -55,4 +47,12 @@ struct FShufflXMPPService
 	FDateTime LoginTimestamp;
 	int32 HandshakeSyn;
 	int32 HandshakeAck;
+};
+
+namespace XMPPGameMode //TODO: move these to .ini config
+{
+	constexpr static auto Option_PuckColor = TEXT("puck");
+	constexpr static auto Level = TEXT("L_Main");
+	constexpr static auto Name_Host = TEXT("/Game/Play/GM_XMPP_Host.GM_XMPP_Host_C");
+	constexpr static auto Name_Invitee = TEXT("/Game/Play/GM_XMPP_Invitee.GM_XMPP_Invitee_C");
 };

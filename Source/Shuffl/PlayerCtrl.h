@@ -142,34 +142,38 @@ public:
 	virtual void HandleNewThrow() override;
 };
 
-UENUM(BlueprintType)
-enum class EXMPPMultiplayerState: uint8
-{
-	Broadcast,
-	Spectate
-};
-
 UCLASS()
 class AXMPPPlayerCtrl : public APlayerCtrl
 {
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Setup)
-	EXMPPMultiplayerState XMPPState = EXMPPMultiplayerState::Broadcast;
-
 	virtual void BeginPlay() override;
-	virtual void SetupInputComponent() override;
 
 	virtual void RequestNewThrow() override;
 	virtual FVector MovePuckOnTouchPosition(FVector2D) override;
 	virtual FVector2D ThrowPuck(FVector2D, float) override;
-//	virtual void ExitSpinMode(float) override; 
-//TODO: spin
+//TODO:	virtual void ExitSpinMode(float) override; 
 	virtual FVector2D DoSlingshot() override;
 
-	void OnReceiveChat(const FString&);
-	void Debug();
+	virtual void SwitchToDetailView() override; // to add debug
+
+private:
+	struct FShufflXMPPService* XMPP;
+};
+
+UCLASS()
+class AXMPPPlayerSpectator : public APlayerCtrl
+{
+	GENERATED_BODY()
+
+public:
+	virtual void BeginPlay() override;
+	virtual void SetupInputComponent() override;
+
+	virtual void SwitchToDetailView() override; // to add debug
+
+	void OnReceiveChat(FString);
 
 private:
 	struct FShufflXMPPService* XMPP;

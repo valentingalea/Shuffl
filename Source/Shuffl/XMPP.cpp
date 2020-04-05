@@ -20,7 +20,6 @@
 
 #include "Shuffl.h"
 #include "GameSubSys.h"
-#include "PlayerCtrl.h" //TODO: remove this dependency
 #include "Puck.h"
 
 void FShufflXMPPService::Login(EPuckColor color)
@@ -146,8 +145,8 @@ void FShufflXMPPService::OnChat(const TSharedRef<IXmppConnection>& connection,
 
 		UGameplayStatics::OpenLevel(sys->GetWorldContext(),
 			XMPPGameMode::Level, true/*absolute travel*/,
-			FString::Printf(TEXT("game=%s?%s?puck=%s"),
-				XMPPGameMode::Name, XMPPGameMode::Invited, PuckColorToString(Color)));
+			FString::Printf(TEXT("game=%s?puck=%s"),
+				XMPPGameMode::Name_Invitee, PuckColorToString(Color)));
 
 		SendChat(TEXT("/travel"));
 		return;
@@ -156,17 +155,15 @@ void FShufflXMPPService::OnChat(const TSharedRef<IXmppConnection>& connection,
 	if (cmd == TEXT("/travel")) {	
 		UGameplayStatics::OpenLevel(sys->GetWorldContext(),
 			XMPPGameMode::Level, true/*absolute travel*/,
-			FString::Printf(TEXT("game=%s?%s?puck=%s"), 
-				XMPPGameMode::Name, XMPPGameMode::Host, PuckColorToString(Color)));
+			FString::Printf(TEXT("game=%s?puck=%s"), 
+				XMPPGameMode::Name_Host, PuckColorToString(Color)));
 		return;
 	}
 
 //
 // pass everything else to the Controllers
 //
-	if (auto* pc = Cast<AXMPPPlayerCtrl>(sys->ShufflGetActivePlayerCtrl(sys->GetWorldContext()))) {
-		pc->OnReceiveChat(msg);
-	}
+	sys->OnXMPPChatReceived.Broadcast(msg);
 }
 
 void FShufflXMPPService::SendChat(const FString& msg)

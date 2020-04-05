@@ -62,6 +62,22 @@ inline void DebugPrint(const FmtType& fmt, Types... args)
 		FString::Printf(fmt, args...), false/*newer on top*/, FVector2D(1.5f, 1.5f)/*scale*/);
 }
 
+static void RequestDebug(UWorld* world, FShufflXMPPService* xmpp)
+{
+	FString out = TEXT("/debug ?");
+	int num = 0;
+
+	for (auto i = TActorIterator<APuck>(world); i; ++i) {
+		FVector p = i->GetActorLocation();
+		out += FString::Printf(TEXT(" %i %i %i %i"),
+			i->TurnId, bit_cast(p.X), bit_cast(p.Y), bit_cast(p.Z));
+		num++;
+	}
+
+	out = out.Replace(TEXT("?"), *FString::Printf(TEXT("%i"), num));
+	xmpp->SendChat(out);
+}
+
 void AXMPPPlayerCtrl::BeginPlay()
 {
 	Super::BeginPlay();
@@ -71,26 +87,13 @@ void AXMPPPlayerCtrl::BeginPlay()
 	}
 }
 
-void AXMPPPlayerCtrl::SetupInputComponent()
-{
-	if (XMPPState == EXMPPMultiplayerState::Broadcast) {
-		Super::SetupInputComponent();
-	} else {
-		APlayerController::SetupInputComponent();
-		InputComponent->BindAction("Quit", IE_Released, this, &AXMPPPlayerCtrl::OnQuit);
-		InputComponent->BindAction("Rethrow", IE_Released, this, &AXMPPPlayerCtrl::RequestNewThrow);
-	}
-}
-
 void AXMPPPlayerCtrl::RequestNewThrow()
 {
 	if (PlayMode == EPlayerCtrlMode::Setup) return;
 
-	if (XMPPState == EXMPPMultiplayerState::Broadcast) {
-		auto* gameState = Cast<AShufflGameState>(GetWorld()->GetGameState());
-		XMPP->SendChat(FString::Printf(TEXT("%s %i"),
-			ChatCmd::NextTurn, gameState->GlobalTurnCounter));
-	}
+	auto* gameState = Cast<AShufflGameState>(GetWorld()->GetGameState());
+	XMPP->SendChat(FString::Printf(TEXT("%s %i"),
+		ChatCmd::NextTurn, gameState->GlobalTurnCounter));
 
 	GetWorld()->GetAuthGameMode<AShufflCommonGameMode>()->NextTurn();
 }
@@ -99,10 +102,8 @@ FVector AXMPPPlayerCtrl::MovePuckOnTouchPosition(FVector2D touchLocation)
 {
 	auto location = Super::MovePuckOnTouchPosition(touchLocation);
 
-	if (XMPPState == EXMPPMultiplayerState::Broadcast) {
-		XMPP->SendChat(FString::Printf(TEXT("%s %i %i %i"),
-			ChatCmd::Move, bit_cast(location.X), bit_cast(location.Y), bit_cast(location.Z)));
-	}
+	XMPP->SendChat(FString::Printf(TEXT("%s %i %i %i"),
+		ChatCmd::Move, bit_cast(location.X), bit_cast(location.Y), bit_cast(location.Z)));
 
 	return location;
 }
@@ -111,10 +112,8 @@ FVector2D AXMPPPlayerCtrl::ThrowPuck(FVector2D gestureVector, float velocity)
 {
 	auto force = Super::ThrowPuck(gestureVector, velocity);
 
-	if (XMPPState == EXMPPMultiplayerState::Broadcast) {
-		XMPP->SendChat(FString::Printf(TEXT("%s %i %i"),
-			ChatCmd::Throw, bit_cast(force.X), bit_cast(force.Y)));
-	}
+	XMPP->SendChat(FString::Printf(TEXT("%s %i %i"),
+		ChatCmd::Throw, bit_cast(force.X), bit_cast(force.Y)));
 
 	return force;
 }
@@ -123,15 +122,46 @@ FVector2D AXMPPPlayerCtrl::DoSlingshot()
 {
 	auto force = Super::DoSlingshot();
 
-	if (XMPPState == EXMPPMultiplayerState::Broadcast) {
-		XMPP->SendChat(FString::Printf(TEXT("%s %i %i"),
-			ChatCmd::Throw, bit_cast(force.X), bit_cast(force.Y)));
-	}
+	XMPP->SendChat(FString::Printf(TEXT("%s %i %i"),
+		ChatCmd::Throw, bit_cast(force.X), bit_cast(force.Y)));
 
 	return force;
 }
 
-void AXMPPPlayerCtrl::OnReceiveChat(const FString& msg)
+void AXMPPPlayerCtrl::SwitchToDetailView()
+{
+	Super::SwitchToDetailView();
+
+	RequestDebug(GetWorld(), XMPP);
+}
+
+void AXMPPPlayerSpectator::BeginPlay()
+{
+	Super::BeginPlay();
+
+	if (auto sys = UGameSubSys::Get(this)) {
+		XMPP = &sys->XMPP;
+		sys->OnXMPPChatReceived.AddUObject(this, &AXMPPPlayerSpectator::OnReceiveChat);
+	}
+}
+
+void AXMPPPlayerSpectator::SetupInputComponent()
+{
+	// circumvent parent as to not inherit touch input
+	APlayerController::SetupInputComponent();
+
+	InputComponent->BindAction("Quit", IE_Released, this, &AXMPPPlayerSpectator::OnQuit);
+	InputComponent->BindAction("Rethrow", IE_Released, this, &AXMPPPlayerSpectator::RequestNewThrow);
+}
+
+void AXMPPPlayerSpectator::SwitchToDetailView()
+{
+	Super::SwitchToDetailView();
+
+	RequestDebug(GetWorld(), XMPP);
+}
+
+void AXMPPPlayerSpectator::OnReceiveChat(FString msg)
 {
 	TArray<FString> args;
 	msg.ParseIntoArrayWS(args);
@@ -154,8 +184,6 @@ void AXMPPPlayerCtrl::OnReceiveChat(const FString& msg)
 	}
 
 	if (cmd == ChatCmd::Move) {
-		ensure(XMPPState == EXMPPMultiplayerState::Spectate);
-
 		float X = bit_cast(FCString::Atoi(*args[1]));
 		float Y = bit_cast(FCString::Atoi(*args[2]));
 		float Z = bit_cast(FCString::Atoi(*args[3]));
@@ -166,14 +194,13 @@ void AXMPPPlayerCtrl::OnReceiveChat(const FString& msg)
 			PlayMode = EPlayerCtrlMode::Setup;
 		} else {
 			UE_LOG(LogShuffl, Error, TEXT("received Move cmd when puck not spawned!"));
+			//TODO: possibly save this and apply later when appropiate?
 		}
 
 		return;
 	}
 
 	if (cmd == ChatCmd::Throw) {
-		ensure(XMPPState == EXMPPMultiplayerState::Spectate);
-
 		float X = bit_cast(FCString::Atoi(*args[1]));
 		float Y = bit_cast(FCString::Atoi(*args[2]));
 		DebugPrint(TEXT("%s (%f) (%f)"), *cmd, X, Y);
@@ -221,22 +248,4 @@ void AXMPPPlayerCtrl::OnReceiveChat(const FString& msg)
 
 		return;
 	}
-}
-
-void AXMPPPlayerCtrl::Debug()
-{
-	FString out = TEXT("/debug ?");
-	int num = 0;
-
-	for (auto i = TActorIterator<APuck>(GetWorld()); i; ++i) {
-		FVector p = i->GetActorLocation();
-		out += FString::Printf(TEXT(" %i %i %i %i"),
-			i->TurnId, bit_cast(p.X), bit_cast(p.Y), bit_cast(p.Z));
-		num++;
-	}
-
-	out = out.Replace(TEXT("?"), *FString::Printf(TEXT("%i"), num));
-
-	auto sys = UGameSubSys::Get(this);
-	sys->XMPP.SendChat(out);
 }

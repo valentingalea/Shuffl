@@ -79,7 +79,7 @@ void APlayerCtrl::BeginPlay()
 	PlayMode = EPlayerCtrlMode::Setup;
 }
 
-void APlayerCtrl::SetupInputComponent()
+void APlayerCtrl::SetupInputComponent() //TODO: extract the action names into shared def
 {
 	Super::SetupInputComponent();
 

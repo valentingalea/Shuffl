@@ -30,18 +30,27 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FEvent_ScoreChanged,
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FEvent_PlayersChangeTurn,
 							EPuckColor, NewColor);
 
+DECLARE_MULTICAST_DELEGATE_OneParam(FEvent_XMPPChatReceived, FString);
+
+
 UCLASS()
 class UGameSubSys : public UGameInstanceSubsystem
 {
 	GENERATED_BODY()
 
 public:
+//
+// Game Instance
+//
 	virtual void Initialize(FSubsystemCollectionBase&) override;
 	virtual void Deinitialize() override;
 
 	static UGameSubSys* Get(const UObject* ContextObject);
 	static UObject* GetWorldContext();
 
+//
+// Utility general stuff
+//
 	UPROPERTY(BlueprintAssignable)
 	FEvent_ScoreChanged ScoreChanged;
 
@@ -54,6 +63,9 @@ public:
 	UFUNCTION(BlueprintPure)
 	static int ShufflGetWinningScore();
 
+//
+// XMPP multiplayer chat
+//
 	UFUNCTION(BlueprintCallable, meta = (WorldContext = "WorldContextObject"))
 	static void XMPPLogin(const UObject* WorldContextObject, EPuckColor Color);
 
@@ -65,4 +77,6 @@ public:
 
 	UPROPERTY()
 	FShufflXMPPService XMPP;
+
+	FEvent_XMPPChatReceived OnXMPPChatReceived;
 };

@@ -241,7 +241,7 @@ void AShufflAgainstAIGameMode::HandleMatchIsWaitingToStart()
 	auto* p2 = Cast<APlayerCtrl>(SpawnPlayerControllerCommon(
 		ROLE_SimulatedProxy, // so it gets localplayer flag
 		p1->K2_GetActorLocation(), p1->K2_GetActorRotation(),
-		ReplaySpectatorPlayerControllerClass));
+		ReplaySpectatorPlayerControllerClass)); //HACK: use this as transport for the AI pc
 	GetWorld()->AddController(p2);
 	p2->Player = p1->Player;
 
@@ -252,34 +252,22 @@ void AShufflAgainstAIGameMode::HandleMatchIsWaitingToStart()
 
 void AShufflXMPPGameMode::HandleMatchIsWaitingToStart()
 {
-	Super::HandleMatchIsWaitingToStart();
+	Super::Super::HandleMatchIsWaitingToStart();
 
 	auto iterator = GetWorld()->GetPlayerControllerIterator();
-	auto* p1 = Cast<AXMPPPlayerCtrl>(*iterator);
-	ensure(p1);
+	auto* p1 = Cast<APlayerCtrl>(*iterator);
 
-	iterator++;
-	auto* p2 = Cast<AXMPPPlayerCtrl>(*iterator);
-	ensure(p2);
+	// spawn a second player controller tied to the same local player
+	auto* p2 = Cast<APlayerCtrl>(SpawnPlayerControllerCommon(
+		ROLE_SimulatedProxy, // so it gets localplayer flag
+		p1->K2_GetActorLocation(), p1->K2_GetActorRotation(),
+		ReplaySpectatorPlayerControllerClass)); //HACK: use this as transport for second type of controller
+	GetWorld()->AddController(p2);
+	p2->Player = p1->Player;
 
-	constexpr auto PUCK = TEXT("puck"); //TODO: get rid of this of extract var out
-	ensure(UGameplayStatics::HasOption(OptionsString, PUCK));
-	auto startPuckColor = StringToPuckColor(*UGameplayStatics::ParseOption(OptionsString, PUCK));
-	
-	//TODO: this is completely invalid as it's executed too late and the PC has input initialized 
-	if (UGameplayStatics::HasOption(OptionsString, XMPPGameMode::Host)) {
-		p1->XMPPState = EXMPPMultiplayerState::Broadcast;
-		p2->XMPPState = EXMPPMultiplayerState::Spectate;
-
-		p1->GetPlayerState<AShufflPlayerState>()->Color = startPuckColor;
-		p2->GetPlayerState<AShufflPlayerState>()->Color = OppositePuckColor(startPuckColor);
-	}
-
-	if (UGameplayStatics::HasOption(OptionsString, XMPPGameMode::Invited)) {
-		p1->XMPPState = EXMPPMultiplayerState::Spectate;
-		p2->XMPPState = EXMPPMultiplayerState::Broadcast;
-
-		p1->GetPlayerState<AShufflPlayerState>()->Color = OppositePuckColor(startPuckColor);
-		p2->GetPlayerState<AShufflPlayerState>()->Color = startPuckColor;
-	}
+	ensure(UGameplayStatics::HasOption(OptionsString, XMPPGameMode::Option_PuckColor));
+	auto startPuckColor = StringToPuckColor(
+		*UGameplayStatics::ParseOption(OptionsString, XMPPGameMode::Option_PuckColor));
+	p1->GetPlayerState<AShufflPlayerState>()->Color = startPuckColor;
+	p2->GetPlayerState<AShufflPlayerState>()->Color = OppositePuckColor(startPuckColor);
 }
