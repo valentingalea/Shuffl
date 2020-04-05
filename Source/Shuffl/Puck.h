@@ -81,3 +81,18 @@ private:
 	float Lifetime = 0.f; // since it started Traveling (in sec)
 	float SpinAccumulator = 0.f;
 };
+
+inline const TCHAR* PuckColorToString(EPuckColor color)
+{
+	return color == EPuckColor::Red ? TEXT("Red") : TEXT("Blue");
+}
+
+inline EPuckColor StringToPuckColor(const TCHAR* str)
+{
+	return (str && str[0] == 'R') ? EPuckColor::Red : EPuckColor::Blue;
+}
+
+inline EPuckColor OppositePuckColor(EPuckColor color)
+{
+	return color == EPuckColor::Red ? EPuckColor::Blue : EPuckColor::Red;
+}

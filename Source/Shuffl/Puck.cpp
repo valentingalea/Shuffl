@@ -140,7 +140,7 @@ inline UStaticMeshComponent* FindCap(EPuckColor color, AActor* parent)
 
 void APuck::SetColor(EPuckColor newColor)
 {
-	auto prev = newColor == EPuckColor::Red ? EPuckColor::Blue : EPuckColor::Red;
+	auto prev = OppositePuckColor(newColor);
 	auto mesh = FindCap(prev, this);
 	mesh->SetHiddenInGame(true);
 	Color = newColor;
