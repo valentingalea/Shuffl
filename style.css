@@ -44,6 +44,12 @@ h1.display-3 {
 	color: white;
 }
 
-div.container:nth-child(1) > p:nth-child(2) {
+.pitch-line {
 	color: white;
+	background-color: rgba(0, 0, 0, .2);
+	padding: .5em;
+}
+
+.featurette-divider {
+	margin: 2rem 0;
 }
