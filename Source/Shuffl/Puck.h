@@ -22,7 +22,7 @@
 
 #include "Puck.generated.h"
 
-UCLASS(Config = Game)
+UCLASS()
 class SHUFFL_API APuck : public APawn
 {
 	GENERATED_BODY()
@@ -35,18 +35,6 @@ public:
 
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = Puck)
 	float Radius = 2.5f; //cm
-
-	UPROPERTY(Config, VisibleDefaultsOnly, BlueprintReadOnly, Category = Setup)
-	UClass* PuckMeshClass;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Setup)
-	class UStaticMeshComponent* ThePuck;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Setup)
-	class USpringArmComponent* TheSpringArm;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Setup)
-	class UCameraComponent* MainCamera;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Debug)
 	float SpringArmLenghtOnZoom = 15.f;
@@ -77,10 +65,17 @@ private:
 	virtual void Tick(float) override;
 	void OnResting();
 
+	class UStaticMeshComponent* GetPuck();
+
 	EPuckState State = EPuckState::Setup;
 	float Lifetime = 0.f; // since it started Traveling (in sec)
 	float SpinAccumulator = 0.f;
 };
+
+inline class UStaticMeshComponent* APuck::GetPuck()
+{
+	return static_cast<UStaticMeshComponent*>(GetRootComponent());
+}
 
 inline const TCHAR* PuckColorToString(EPuckColor color)
 {

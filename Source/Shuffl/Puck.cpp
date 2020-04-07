@@ -32,28 +32,22 @@
 // Sets default values
 APuck::APuck()
 {
-	LoadConfig(APuck::StaticClass());
-	make_sure(PuckMeshClass);
-
-	// this is the best way to create a component from a custom UClass (Blueprint one in this case)
-	// calling NewObject() forces to declare an 'outer' and that's a rabbit hole
-	ThePuck = static_cast<UStaticMeshComponent *>(CreateDefaultSubobject("Puck", PuckMeshClass, 
-		PuckMeshClass, /*bIsRequired =*/ true, /*bTransient*/ false));
-	RootComponent = ThePuck;
-
-	// create the class and give some decent defaults as it's hard to navigate and
-	// see the overrides in a Blueprint'able subclass
-	// this has the disadvantage that now we will multiple defaults :(
-	TheSpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
-	TheSpringArm->SetupAttachment(RootComponent);
-	TheSpringArm->SetUsingAbsoluteRotation(true); // not affected by rotation of target
-	TheSpringArm->SetRelativeRotation(FRotator(0.f, -20.f, 0.f));
-	TheSpringArm->TargetArmLength = 300.f;
-	TheSpringArm->bEnableCameraLag = true;
-	TheSpringArm->bDoCollisionTest = false;
-
-	MainCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
-	MainCamera->SetupAttachment(TheSpringArm, USpringArmComponent::SocketName);
+	//
+	// NOTE: expects to be subclassed in Blueprint with the following hierarchy
+	//
+	// + Puck-component-class (root)
+	// |   |
+	// |   +-- Spring Arm component
+	// |       |
+	// |       +-- Camera component
+	// |
+	// +-- high detail meshes
+	// |   |
+	// |   + ...
+	// |
+	// +-- Arrow component (slingshot preview)
+	//
+	// the reason is done like this is to have one source of thruth and for simplicity
 
 	// Docs quote: "Determines which PlayerController, if any, should automatically possess the pawn
 	// when the level starts or when the pawn is spawned"
@@ -68,7 +62,7 @@ void APuck::Tick(float deltaTime)
 	if (State != EPuckState::Traveling && State != EPuckState::Traveling_WithSpin) return;
 
 	Lifetime += deltaTime;
-	FVector vel = ThePuck->GetPhysicsLinearVelocity();
+	FVector vel = GetPuck()->GetPhysicsLinearVelocity();
 
 	if (State == EPuckState::Traveling_WithSpin) {
 		const auto spin_angle = Impulse.Y;
@@ -77,7 +71,7 @@ void APuck::Tick(float deltaTime)
 		if (SpinAccumulator <= FMath::Abs(spin_angle * Radius)) {
 			auto s = spin_vel * deltaTime;
 			SpinAccumulator += s;
-			ThePuck->AddImpulse(FVector(0, s * (spin_angle >= 0 ? 1 : -1), 0));
+			GetPuck()->AddImpulse(FVector(0, s * (spin_angle >= 0 ? 1 : -1), 0));
 		}
 	}
 
@@ -113,13 +107,13 @@ void APuck::OnResting()
 void APuck::ApplyThrow(FVector2D force)
 {
 	Impulse = FVector(force.X, force.Y, 0);
-	ThePuck->AddImpulse(Impulse);
+	GetPuck()->AddImpulse(Impulse);
 	State = EPuckState::Traveling;
 }
 
 void APuck::MoveTo(FVector location)
 {
-	ThePuck->SetWorldLocationAndRotation(location, FRotator::ZeroRotator,
+	GetPuck()->SetWorldLocationAndRotation(location, FRotator::ZeroRotator,
 		false/*sweep*/, nullptr/*hit result*/,
 		ETeleportType::TeleportPhysics); //NOTE: ResetPhysics causes problems
 	State = EPuckState::Setup;
@@ -127,7 +121,7 @@ void APuck::MoveTo(FVector location)
 
 inline UStaticMeshComponent* FindCap(EPuckColor color, AActor* parent)
 {
-	auto name = color == EPuckColor::Red ? "Puck_Cap_Red" : "Puck_Cap_Blue"; //TODO: better way of identify
+	auto name = color == EPuckColor::Red ? "Puck_Cap_Red" : "Puck_Cap_Blue";
 	TInlineComponentArray<UStaticMeshComponent*> compList(parent);
 	for (auto* c : compList) {
 		if (c->GetName() == name) return c;
@@ -138,30 +132,38 @@ inline UStaticMeshComponent* FindCap(EPuckColor color, AActor* parent)
 void APuck::SetColor(EPuckColor newColor)
 {
 	auto prev = OppositePuckColor(newColor);
-	auto mesh = FindCap(prev, this);
-	mesh->SetHiddenInGame(true);
+	if (auto mesh = FindCap(prev, this)) {
+		mesh->SetHiddenInGame(true);
+	}
 	Color = newColor;
 }
 
 void APuck::PreviewSpin(float spinAmount)
 {
-	auto mesh = FindCap(Color, this);
-	mesh->SetRelativeRotation(FRotator(0, FMath::RadiansToDegrees(spinAmount), 0));
+	if (auto mesh = FindCap(Color, this)) {
+		mesh->SetRelativeRotation(FRotator(0, FMath::RadiansToDegrees(spinAmount), 0));
+	}
 }
 
 static float NormalArmLength;
 
 void APuck::OnEnterSpin()
 {
-	NormalArmLength = TheSpringArm->TargetArmLength;
-	TheSpringArm->TargetArmLength = SpringArmLenghtOnZoom;
-	TheSpringArm->bEnableCameraLag = false;
+	auto* springArm = static_cast<USpringArmComponent*>(
+		GetComponentByClass(USpringArmComponent::StaticClass()));
+	make_sure(springArm);
+	NormalArmLength = springArm->TargetArmLength;
+	springArm->TargetArmLength = SpringArmLenghtOnZoom;
+	springArm->bEnableCameraLag = false;
 }
 
 void APuck::OnExitSpin()
 {
-	TheSpringArm->TargetArmLength = NormalArmLength;
-	TheSpringArm->bEnableCameraLag = true;
+	auto* springArm = static_cast<USpringArmComponent*>(
+		GetComponentByClass(USpringArmComponent::StaticClass()));
+	make_sure(springArm);
+	springArm->TargetArmLength = NormalArmLength;
+	springArm->bEnableCameraLag = true;
 }
 
 void APuck::ApplySpin(float spinAmount, float fingerVelocity)
@@ -171,7 +173,7 @@ void APuck::ApplySpin(float spinAmount, float fingerVelocity)
 	Impulse.Z = fingerVelocity;
 	State = EPuckState::Traveling_WithSpin;
 	SpinAccumulator = 0.f;
-	ThePuck->AddAngularImpulseInRadians(FVector(0, 0, PI * Radius * 2.f * spinAmount));
+	GetPuck()->AddAngularImpulseInRadians(FVector(0, 0, PI * Radius * 2.f * spinAmount));
 }
 
 void APuck::ShowSlingshotPreview(FVector rot, FColor color)
@@ -193,6 +195,6 @@ void APuck::HideSlingshotPreview()
 FBox APuck::GetBoundingBox()
 {
 	FVector _min, _max;
-	ThePuck->GetLocalBounds(_min, _max);
-	return FBox(_min, _max).MoveTo(ThePuck->GetComponentLocation());
+	GetPuck()->GetLocalBounds(_min, _max);
+	return FBox(_min, _max).MoveTo(GetPuck()->GetComponentLocation());
 }

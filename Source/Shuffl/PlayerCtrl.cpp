@@ -61,19 +61,16 @@ void APlayerCtrl::BeginPlay()
 {
 	Super::BeginPlay();
 
-// inviolable contracts
-	{
-		make_sure(PawnClass);
+	auto iter = TActorIterator<ASceneProps>(GetWorld());
+	make_sure(*iter);
+	SceneProps = *iter;
+	make_sure(SceneProps->DetailViewCamera);
+	make_sure(SceneProps->StartingPoint);
+	make_sure(SceneProps->KillingVolume);
 
-		auto iter = TActorIterator<ASceneProps>(GetWorld());
-		make_sure(*iter);
-		SceneProps = *iter;
-		make_sure(SceneProps->DetailViewCamera);
-		make_sure(SceneProps->StartingPoint);
-		make_sure(SceneProps->KillingVolume);
+	make_sure(PawnClass);
 
-		StartingPoint = SceneProps->StartingPoint->GetActorLocation();
-	}
+	StartingPoint = SceneProps->StartingPoint->GetActorLocation();
 
 	TouchHistory.Reserve(64);
 	PlayMode = EPlayerCtrlMode::Setup;
