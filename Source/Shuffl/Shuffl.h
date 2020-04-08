@@ -21,3 +21,19 @@
 	if (!(ensure(cond))) return
 
 DECLARE_LOG_CATEGORY_EXTERN(LogShuffl, Warning, All);
+
+void ShufflScreenLog(const FString&);
+
+template <typename FmtType, typename... Types>
+inline void ShufflLog(FmtType && fmt, Types &&... args)
+{
+	UE_LOG(LogShuffl, Warning, fmt, args...);
+	ShufflScreenLog(FString::Printf(fmt, Forward<Types>(args)...));
+}
+
+template <typename FmtType, typename... Types>
+inline void ShufflErr(FmtType && fmt, Types &&... args)
+{
+	UE_LOG(LogShuffl, Error, fmt, args...);
+	ShufflScreenLog(FString::Printf(fmt, Forward<Types>(args)...));
+}

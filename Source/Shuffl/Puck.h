@@ -72,11 +72,6 @@ private:
 	float SpinAccumulator = 0.f;
 };
 
-inline class UStaticMeshComponent* APuck::GetPuck()
-{
-	return static_cast<UStaticMeshComponent*>(GetRootComponent());
-}
-
 inline const TCHAR* PuckColorToString(EPuckColor color)
 {
 	return color == EPuckColor::Red ? TEXT("Red") : TEXT("Blue");

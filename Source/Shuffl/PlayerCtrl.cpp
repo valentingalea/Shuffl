@@ -15,16 +15,15 @@
 
 #include "PlayerCtrl.h"
 
-#include "Engine/Engine.h"
 #include "EngineUtils.h"
 #include "TimerManager.h"
 #include "Components/InputComponent.h"
+#include "Components/ArrowComponent.h"
 #include "Camera/CameraActor.h"
 #include "GameFramework/PlayerStart.h"
 #include "GameFramework/PlayerState.h"
 #include "DrawDebugHelpers.h"
 #include "Math/UnrealMathUtility.h"
-#include "Components/ArrowComponent.h"
 
 #include "Shuffl.h"
 #include "GameSubSys.h"
@@ -32,15 +31,7 @@
 #include "ScoringVolume.h"
 #include "SceneProps.h"
 
-template <typename FmtType, typename... Types>
-inline void DebugPrint(const FmtType& fmt, Types... args)
-{
-#if 0
-	static uint64 id = 0;
-	GEngine->AddOnScreenDebugMessage(id++, 3/*sec*/, FColor::Green,
-		FString::Printf(fmt, args...));
-#endif
-}
+//#define PRINT_THROW
 
 inline FHitResult ProjectScreenPoint(const APlayerCtrl *ctrl, const FVector2D& location)
 {
@@ -262,8 +253,10 @@ FVector2D APlayerCtrl::ThrowPuck(FVector2D gestureVector, float velocity)
 	}
 	
 	GetPuck()->ApplyThrow(FVector2D(X, Y));
+#ifdef PRINT_THROW
+	ShufflLog(TEXT("Vel %4.2f px/sec -- (%3.1f, %3.1f)"), velocity, X, Y);
+#endif
 
-	DebugPrint(TEXT("Vel %4.2f px/sec -- (%3.1f, %3.1f)"), velocity, X, Y);
 	return FVector2D(X, Y);
 }
 
@@ -294,7 +287,9 @@ void APlayerCtrl::ExitSpinMode(float fingerVelocity)
 
 	GetPuck()->OnExitSpin();
 	GetPuck()->ApplySpin(SpinAmount, fingerVelocity);
-	DebugPrint(TEXT("Spin %3.1f"), SpinAmount);
+#ifdef PRINT_THROW
+	ShufflLog(TEXT("Spin %3.1f"), SpinAmount);
+#endif
 
 	GetWorldSettings()->SetTimeDilation(1.f);
 }
@@ -323,8 +318,10 @@ FVector2D APlayerCtrl::DoSlingshot()
 	f *= FMath::Min(len, ThrowForceMax);
 	
 	GetPuck()->ApplyThrow(f);
+#ifdef PRINT_THROW
+	ShufflLog(TEXT("Sling %3.1f %3.1f"), f.X, f.Y);
+#endif
 
-	DebugPrint(TEXT("Sling %3.1f %3.1f"), f.X, f.Y);
 	return f;
 }
 
@@ -341,9 +338,6 @@ FVector APlayerCtrl::MovePuckOnTouchPosition(FVector2D touchLocation)
 		AB.Normalize();
 		const float d = FVector::DotProduct(AP, AB);
 		const FVector location = A + FVector(0, FMath::Clamp(d, 0.f, StartingLine.Y), 0);
-
-		//DrawDebugSphere(GetWorld(), P, 5, 4, FColor::Green, false, 3);
-		//DrawDebugSphere(GetWorld(), location, 5, 4, FColor::Red, false, 3);
 
 		GetPuck()->MoveTo(location);
 		return location;

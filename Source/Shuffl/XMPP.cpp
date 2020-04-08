@@ -45,14 +45,14 @@ void FShufflXMPPService::Login(EPuckColor color)
 
 void FShufflXMPPService::OnLogin(const FXmppUserJid& userJid, bool bWasSuccess, const FString& /*unused*/)
 {
-	UE_LOG(LogShuffl, Warning, TEXT("XMPP Login UserJid=%s Success=%s"),
+	ShufflLog(TEXT("XMPP Login UserJid=%s Success=%s"),
 		*userJid.GetFullPath(), bWasSuccess ? TEXT("true") : TEXT("false"));
 
 	if (!bWasSuccess ||
 		!Connection.IsValid() ||
 		Connection->GetLoginStatus() != EXmppLoginStatus::LoggedIn)
 	{
-		UE_LOG(LogShuffl, Error, TEXT("XMPP invalid login"));
+		ShufflErr(TEXT("XMPP invalid login"));
 		return;
 	}
 
@@ -74,7 +74,7 @@ void FShufflXMPPService::Logout()
 
 	Connection->OnLogoutComplete().AddLambda(
 		[](const FXmppUserJid& userJid, bool bWasSuccess, const FString& /*unused*/) {
-		UE_LOG(LogShuffl, Warning, TEXT("Logout UserJid=%s Success=%s"),
+		ShufflLog(TEXT("Logout UserJid=%s Success=%s"),
 			*userJid.GetFullPath(), bWasSuccess ? TEXT("true") : TEXT("false"));
 	}
 	);
@@ -98,9 +98,9 @@ void FShufflXMPPService::OnChat(const TSharedRef<IXmppConnection>& connection,
 	make_sure(Connection.IsValid() && Connection->GetLoginStatus() == EXmppLoginStatus::LoggedIn);
 
 	const auto& msg = chatMsg->Body;
-	UE_LOG(LogShuffl, Warning, TEXT("From: `%s` Msg: `%s`"), *fromJid.Id, *msg);
+	ShufflLog(TEXT("From: `%s` Msg: `%s`"), *fromJid.Id, *msg);
 	if (chatMsg->Timestamp < LoginTimestamp) {
-		UE_LOG(LogShuffl, Error, TEXT("got offline chat message!"));
+		ShufflErr(TEXT("got offline chat message!"));
 		return; //TODO: lift this to support offline invites?
 	}
 
@@ -128,7 +128,7 @@ void FShufflXMPPService::OnChat(const TSharedRef<IXmppConnection>& connection,
 		int32 otherSyn = FCString::Atoi(*args[1]);
 		HandshakeAck = FCString::Atoi(*args[2]);
 		if (HandshakeSyn != HandshakeAck - 1) {
-			UE_LOG(LogShuffl, Error, TEXT("got faulty handshake syn!"));
+			ShufflErr(TEXT("got faulty handshake syn!"));
 			return;
 		}
 		SendChat(FString::Printf(TEXT("/travel-ack %i %i"), otherSyn + 1, HandshakeAck));
@@ -139,7 +139,7 @@ void FShufflXMPPService::OnChat(const TSharedRef<IXmppConnection>& connection,
 		int32 otherSyn = FCString::Atoi(*args[1]);
 		int32 otherAck = FCString::Atoi(*args[2]);
 		if (HandshakeSyn != otherSyn - 1) {
-			UE_LOG(LogShuffl, Error, TEXT("got faulty handshake ack!"));
+			ShufflErr(TEXT("got faulty handshake ack!"));
 			return;
 		}
 

@@ -241,7 +241,7 @@ void AShufflAgainstAIGameMode::HandleMatchIsWaitingToStart()
 	auto* p2 = Cast<APlayerCtrl>(SpawnPlayerControllerCommon(
 		ROLE_SimulatedProxy, // so it gets localplayer flag
 		p1->K2_GetActorLocation(), p1->K2_GetActorRotation(),
-		ReplaySpectatorPlayerControllerClass)); //HACK: use this as transport for the AI pc
+		ReplaySpectatorPlayerControllerClass)); //NOTE: use this as transport for the AI pc
 	GetWorld()->AddController(p2);
 	p2->Player = p1->Player;
 
@@ -261,7 +261,7 @@ void AShufflXMPPGameMode::HandleMatchIsWaitingToStart()
 	auto* p2 = Cast<APlayerCtrl>(SpawnPlayerControllerCommon(
 		ROLE_SimulatedProxy, // so it gets localplayer flag
 		p1->K2_GetActorLocation(), p1->K2_GetActorRotation(),
-		ReplaySpectatorPlayerControllerClass)); //HACK: use this as transport for second type of controller
+		ReplaySpectatorPlayerControllerClass)); //NOTE: use this as transport for second type of controller
 	GetWorld()->AddController(p2);
 	p2->Player = p1->Player;
 

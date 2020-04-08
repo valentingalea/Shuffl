@@ -14,7 +14,6 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 #include "PlayerCtrl.h"
-#include "Engine/Engine.h"
 #include "EngineUtils.h"
 #include "Components/InputComponent.h"
 #include "Math/UnrealMathUtility.h"
@@ -52,14 +51,6 @@ namespace ChatCmd
 	static constexpr auto NextTurn = TEXT("/turn");
 	static constexpr auto Throw = TEXT("/throw");
 	static constexpr auto Move = TEXT("/move");
-}
-
-template <typename FmtType, typename... Types>
-inline void DebugPrint(const FmtType& fmt, Types... args)
-{
-	static uint64 id = 0;
-	GEngine->AddOnScreenDebugMessage(id++, 5/*sec*/, FColor::Green,
-		FString::Printf(fmt, args...), false/*newer on top*/, FVector2D(1.5f, 1.5f)/*scale*/);
 }
 
 static void RequestDebug(UWorld* world, FShufflXMPPService* xmpp)
@@ -171,12 +162,12 @@ void AXMPPPlayerSpectator::OnReceiveChat(FString msg)
 	if (cmd == ChatCmd::NextTurn) {
 		auto* gameState = Cast<AShufflGameState>(GetWorld()->GetGameState());
 		int turnId = FCString::Atoi(*args[1]);
-		DebugPrint(TEXT("%s %i"), *cmd, turnId);
+		ShufflLog(TEXT("%s %i"), *cmd, turnId);
 
 		if (turnId == gameState->GlobalTurnCounter) {
 			GetWorld()->GetAuthGameMode<AShufflCommonGameMode>()->NextTurn();
 		} else {
-			UE_LOG(LogShuffl, Error, TEXT("Received bad turn %i vs %i"),
+			ShufflErr(TEXT("Received bad turn %i vs %i"),
 				turnId, gameState->GlobalTurnCounter); //TODO: add all this log info on screen as well
 		}
 
@@ -187,13 +178,13 @@ void AXMPPPlayerSpectator::OnReceiveChat(FString msg)
 		float X = bit_cast(FCString::Atoi(*args[1]));
 		float Y = bit_cast(FCString::Atoi(*args[2]));
 		float Z = bit_cast(FCString::Atoi(*args[3]));
-		DebugPrint(TEXT("%s (%f) (%f) (%f)"), *cmd, X, Y, Z);
+		ShufflLog(TEXT("%s (%f) (%f) (%f)"), *cmd, X, Y, Z);
 
 		if (GetPuck()) {
 			GetPuck()->MoveTo(FVector(X, Y, Z));
 			PlayMode = EPlayerCtrlMode::Setup;
 		} else {
-			UE_LOG(LogShuffl, Error, TEXT("received Move cmd when puck not spawned!"));
+			ShufflErr(TEXT("received Move cmd when puck not spawned!"));
 			//TODO: possibly save this and apply later when appropiate?
 		}
 
@@ -203,10 +194,10 @@ void AXMPPPlayerSpectator::OnReceiveChat(FString msg)
 	if (cmd == ChatCmd::Throw) {
 		float X = bit_cast(FCString::Atoi(*args[1]));
 		float Y = bit_cast(FCString::Atoi(*args[2]));
-		DebugPrint(TEXT("%s (%f) (%f)"), *cmd, X, Y);
+		ShufflLog(TEXT("%s (%f) (%f)"), *cmd, X, Y);
 
 		if (X > ThrowForceMax || Y > ThrowForceMax) {
-			DebugPrint(TEXT("ERROR!"));
+			ShufflLog(TEXT("received invalid force!"));
 			return;
 		}
 
@@ -214,7 +205,7 @@ void AXMPPPlayerSpectator::OnReceiveChat(FString msg)
 			GetPuck()->ApplyThrow(FVector2D(X, Y));
 			PlayMode = EPlayerCtrlMode::Observe;
 		} else {
-			UE_LOG(LogShuffl, Error, TEXT("received Throw cmd when puck not spawned!"));
+			ShufflErr(TEXT("received Throw cmd when puck not spawned!"));
 		}
 
 		return;
@@ -242,8 +233,7 @@ void AXMPPPlayerSpectator::OnReceiveChat(FString msg)
 
 			FString dbg = FString::Printf(TEXT("%i: %1.6f | %1.6f | %1.6f"),
 				i->TurnId, FMath::Abs(d.X), FMath::Abs(d.Y), FMath::Abs(d.Z));
-			GEngine->AddOnScreenDebugMessage(id++, 30/*sec*/, FColor::Green, dbg);
-			UE_LOG(LogShuffl, Warning, TEXT("%s"), *dbg);
+			ShufflLog(TEXT("%s"), *dbg);
 		}
 
 		return;

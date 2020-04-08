@@ -16,7 +16,6 @@
 #include "Puck.h"
 
 #include "EngineUtils.h"
-#include "UObject/ConstructorHelpers.h"
 #include "Camera/CameraComponent.h"
 #include "Camera/CameraActor.h"
 #include "GameFramework/SpringArmComponent.h"
@@ -29,7 +28,6 @@
 #include "ScoringVolume.h"
 #include "SceneProps.h"
 
-// Sets default values
 APuck::APuck()
 {
 	//
@@ -55,6 +53,11 @@ APuck::APuck()
 	AutoPossessPlayer = EAutoReceiveInput::Disabled;
 
 	PrimaryActorTick.bCanEverTick = true;
+}
+
+UStaticMeshComponent* APuck::GetPuck()
+{
+	return static_cast<UStaticMeshComponent*>(GetRootComponent());
 }
 
 void APuck::Tick(float deltaTime)
