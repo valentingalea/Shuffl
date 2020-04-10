@@ -268,6 +268,13 @@ void AShufflXMPPGameMode::HandleMatchIsWaitingToStart()
 	ensure(UGameplayStatics::HasOption(OptionsString, XMPPGameMode::Option_PuckColor));
 	auto startPuckColor = StringToPuckColor(
 		*UGameplayStatics::ParseOption(OptionsString, XMPPGameMode::Option_PuckColor));
-	p1->GetPlayerState<AShufflPlayerState>()->Color = startPuckColor;
-	p2->GetPlayerState<AShufflPlayerState>()->Color = OppositePuckColor(startPuckColor);
+
+	if (UGameplayStatics::HasOption(OptionsString, XMPPGameMode::Option_Host)) {
+		p1->GetPlayerState<AShufflPlayerState>()->Color = startPuckColor;
+		p2->GetPlayerState<AShufflPlayerState>()->Color = OppositePuckColor(startPuckColor);
+	}
+	if (UGameplayStatics::HasOption(OptionsString, XMPPGameMode::Option_Invitee)) {
+		p1->GetPlayerState<AShufflPlayerState>()->Color = OppositePuckColor(startPuckColor);
+		p2->GetPlayerState<AShufflPlayerState>()->Color = startPuckColor;
+	}
 }

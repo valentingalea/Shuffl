@@ -22,6 +22,20 @@
 #include "GameSubSys.h"
 #include "Puck.h"
 
+inline void TravelHost(const UObject* context, EPuckColor color)
+{
+	UGameplayStatics::OpenLevel(context, XMPPGameMode::Level, true/*absolute travel*/,
+		FString::Printf(TEXT("game=%s?puck=%s?%s"),
+			XMPPGameMode::Name_Host, PuckColorToString(color), XMPPGameMode::Option_Host));
+}
+
+inline void TravelInvitee(const UObject* context, EPuckColor color)
+{
+	UGameplayStatics::OpenLevel(context, XMPPGameMode::Level, true/*absolute travel*/,
+		FString::Printf(TEXT("game=%s?puck=%s?%s"),
+			XMPPGameMode::Name_Invitee, PuckColorToString(color), XMPPGameMode::Option_Invitee));
+}
+
 void FShufflXMPPService::Login(EPuckColor color)
 {
 	Color = color;
@@ -48,10 +62,7 @@ void FShufflXMPPService::OnLogin(const FXmppUserJid& userJid, bool bWasSuccess, 
 	ShufflLog(TEXT("XMPP Login UserJid=%s Success=%s"),
 		*userJid.GetFullPath(), bWasSuccess ? TEXT("true") : TEXT("false"));
 
-	if (!bWasSuccess ||
-		!Connection.IsValid() ||
-		Connection->GetLoginStatus() != EXmppLoginStatus::LoggedIn)
-	{
+	if (!bWasSuccess || !Connection.IsValid()) {
 		ShufflErr(TEXT("XMPP invalid login"));
 		return;
 	}
@@ -76,16 +87,25 @@ void FShufflXMPPService::Logout()
 		[](const FXmppUserJid& userJid, bool bWasSuccess, const FString& /*unused*/) {
 		ShufflLog(TEXT("Logout UserJid=%s Success=%s"),
 			*userJid.GetFullPath(), bWasSuccess ? TEXT("true") : TEXT("false"));
-	}
-	);
+	});
 
 	Connection->Logout();
 	FXmppModule::Get().RemoveConnection(Connection.ToSharedRef());
 }
 
-void FShufflXMPPService::StartGame(const UObject* WorldContextObject)
+void FShufflXMPPService::StartGame(const UObject* context)
 {
 	make_sure(Connection.IsValid());
+
+	// if playing from PIE just start the games directly NOTE: buggy
+	if (UWorld* world = GEngine->GetWorldFromContextObject(context,
+		EGetWorldErrorMode::ReturnNull)) {
+		if (world->WorldType == EWorldType::PIE) {
+			TravelHost(context, Color);
+			SendChat(TEXT("/travel-pie"));
+			return;
+		}
+	}
 
 	HandshakeSyn = FMath::Rand();
 	SendChat(FString::Printf(TEXT("/travel-syn %i"), HandshakeSyn));
@@ -98,7 +118,7 @@ void FShufflXMPPService::OnChat(const TSharedRef<IXmppConnection>& connection,
 	make_sure(Connection.IsValid() && Connection->GetLoginStatus() == EXmppLoginStatus::LoggedIn);
 
 	const auto& msg = chatMsg->Body;
-	ShufflLog(TEXT("From: `%s` Msg: `%s`"), *fromJid.Id, *msg);
+//	ShufflLog(TEXT("From: `%s` Msg: `%s`"), *fromJid.Id, *msg);
 	if (chatMsg->Timestamp < LoginTimestamp) {
 		ShufflErr(TEXT("got offline chat message!"));
 		return; //TODO: lift this to support offline invites?
@@ -143,20 +163,19 @@ void FShufflXMPPService::OnChat(const TSharedRef<IXmppConnection>& connection,
 			return;
 		}
 
-		UGameplayStatics::OpenLevel(sys->GetWorldContext(),
-			XMPPGameMode::Level, true/*absolute travel*/,
-			FString::Printf(TEXT("game=%s?puck=%s"),
-				XMPPGameMode::Name_Invitee, PuckColorToString(Color)));
-
+		TravelInvitee(sys->GetWorldContext(), Color);
 		SendChat(TEXT("/travel"));
 		return;
 	}
 
-	if (cmd == TEXT("/travel")) {	
-		UGameplayStatics::OpenLevel(sys->GetWorldContext(),
-			XMPPGameMode::Level, true/*absolute travel*/,
-			FString::Printf(TEXT("game=%s?puck=%s"), 
-				XMPPGameMode::Name_Host, PuckColorToString(Color)));
+	if (cmd == TEXT("/travel")) {
+		TravelHost(sys->GetWorldContext(), Color);
+		return;
+	}
+
+	// special fast-track case for when playing in the Editor NOTE: buggy
+	if (cmd == TEXT("/travel-pie")) {
+		TravelInvitee(sys->GetWorldContext(), Color);
 		return;
 	}
 

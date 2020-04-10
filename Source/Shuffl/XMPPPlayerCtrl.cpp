@@ -145,6 +145,17 @@ void AXMPPPlayerSpectator::SetupInputComponent()
 	InputComponent->BindAction("Rethrow", IE_Released, this, &AXMPPPlayerSpectator::RequestNewThrow);
 }
 
+void AXMPPPlayerSpectator::RequestNewThrow()
+{
+	if (PlayMode == EPlayerCtrlMode::Setup) return;
+
+	auto* gameState = Cast<AShufflGameState>(GetWorld()->GetGameState());
+	XMPP->SendChat(FString::Printf(TEXT("%s %i"),
+		ChatCmd::NextTurn, gameState->GlobalTurnCounter));
+
+	GetWorld()->GetAuthGameMode<AShufflCommonGameMode>()->NextTurn();
+}
+
 void AXMPPPlayerSpectator::SwitchToDetailView()
 {
 	Super::SwitchToDetailView();
@@ -168,7 +179,7 @@ void AXMPPPlayerSpectator::OnReceiveChat(FString msg)
 			GetWorld()->GetAuthGameMode<AShufflCommonGameMode>()->NextTurn();
 		} else {
 			ShufflErr(TEXT("Received bad turn %i vs %i"),
-				turnId, gameState->GlobalTurnCounter); //TODO: add all this log info on screen as well
+				turnId, gameState->GlobalTurnCounter);
 		}
 
 		return;

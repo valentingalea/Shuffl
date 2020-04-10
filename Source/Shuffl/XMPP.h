@@ -51,8 +51,10 @@ struct FShufflXMPPService
 
 namespace XMPPGameMode //TODO: move these to .ini config
 {
-	constexpr static auto Option_PuckColor = TEXT("puck");
 	constexpr static auto Level = TEXT("L_Main");
 	constexpr static auto Name_Host = TEXT("/Game/Play/GM_XMPP_Host.GM_XMPP_Host_C");
 	constexpr static auto Name_Invitee = TEXT("/Game/Play/GM_XMPP_Invitee.GM_XMPP_Invitee_C");
+	constexpr static auto Option_PuckColor = TEXT("puck");
+	constexpr static auto Option_Host = TEXT("xmpphost");
+	constexpr static auto Option_Invitee = TEXT("xmppinvitee");
 };

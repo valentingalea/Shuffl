@@ -171,6 +171,7 @@ public:
 	virtual void BeginPlay() override;
 	virtual void SetupInputComponent() override;
 
+	virtual void RequestNewThrow() override;
 	virtual void SwitchToDetailView() override; // to add debug
 
 	void OnReceiveChat(FString);
