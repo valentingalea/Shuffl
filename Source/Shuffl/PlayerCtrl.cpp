@@ -16,6 +16,8 @@
 #include "PlayerCtrl.h"
 
 #include "EngineUtils.h"
+#include "Misc/ConfigCacheIni.h"
+#include "CoreGlobals.h"
 #include "TimerManager.h"
 #include "Components/InputComponent.h"
 #include "Components/ArrowComponent.h"
@@ -33,7 +35,7 @@
 
 //#define PRINT_THROW
 
-inline FHitResult ProjectScreenPoint(const APlayerCtrl *ctrl, const FVector2D& location)
+inline FHitResult ProjectScreenPoint(const APlayerCtrl* ctrl, const FVector2D& location)
 {
 	FHitResult hitResult;
 	ctrl->GetHitResultAtScreenPosition(location, ECC_Visibility,
@@ -86,7 +88,11 @@ void APlayerCtrl::SetupInputComponent() //TODO: extract the action names into sh
 
 void APlayerCtrl::OnQuit()
 {
-	FPlatformMisc::RequestExit(false);
+	FString mapURL;
+	if (GConfig->GetString(TEXT("/Script/EngineSettings.GameMapsSettings"), 
+		TEXT("GameDefaultMap"), mapURL, GEngineIni)) {
+		ClientTravel(mapURL, ETravelType::TRAVEL_Absolute);
+	}
 }
 
 void APlayerCtrl::RequestNewThrow()
