@@ -1,8 +1,20 @@
 # Shuffl
 
-A Shuffleboard game experiment
+A Shuffleboard game experiment in Unreal Engine 4 for mobile devices
 
-Copyright (C) 2020 Valentin Galea
+![profile pic](https://valentingalea.github.io/Shuffl/img/UE4.png)
+
+More info at the project's `gh-pages` website https://valentingalea.github.io/Shuffl/
+
+## Contributing
+
+Open `Shuffl.uproject` in UE4 version 4.24+ with Visual Studio 2017+
+
+Coding style follows https://github.com/splash-damage/coding-standards with the exception that braces inside functions are K&R style
+
+Issues and progress is tracked at https://dev.azure.com/valentin-galea/Shuffl/
+
+## Licence
 
 This program is free software : you can redistribute it and /or modify
 it under the terms of the GNU General Public License as published by
