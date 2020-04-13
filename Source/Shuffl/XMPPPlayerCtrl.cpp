@@ -175,7 +175,7 @@ void AXMPPPlayerSpectator::OnReceiveChat(FString msg)
 {
 	TArray<FString> args;
 	msg.ParseIntoArrayWS(args);
-	make_sure(args.Num() > 1);
+	make_sure(args.Num() >= 1); //TODO: should do more safety checks
 	const FString &cmd = args[0];
 
 	if (cmd == ChatCmd::NextTurn) {
