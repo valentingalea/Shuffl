@@ -372,6 +372,41 @@ void APlayerCtrl::HandleScoreCounting(EPuckColor winnerColor,
 	sys->ScoreChanged.Broadcast(winnerColor, winnerTotalScore, winnerRoundScore);
 }
 
+void APlayerCtrl::SetupBowling()
+{
+	make_sure(SceneProps->BowlingPinClass);
+
+	// cleanup previous pins
+	for (auto i = TActorIterator<AActor>(GetWorld()); i; ++i) {
+		if ((*i)->ActorHasTag(TEXT("Bowling"))) {
+			(*i)->Destroy();
+		}
+	}
+
+	// rack'em up!
+	FVector center = SceneProps->BowlingPinsCenter->GetActorLocation();
+	const float space = SceneProps->BowlingPinsSpacing;
+	FVector pins[] = {
+		center + FVector(space, -space * 1.5f, 0), // 7
+		center + FVector(space, -space / 2, 0), // 8
+		center + FVector(space, +space / 2, 0), // 9
+		center + FVector(space, +space * 1.5f, 0), // 10
+		center + FVector(0, -space, 0), // 4
+		center, // 5  
+		center + FVector(0, +space, 0), // 6
+		center + FVector(-space, -space / 2, 0), // 2
+		center + FVector(-space, +space / 2, 0), // 3
+		center + FVector(-2 * space, 0, 0), // 1
+	};
+	for (const auto& p : pins) {
+		GetWorld()->SpawnActor(SceneProps->BowlingPinClass, &p);
+	}
+}
+
+//
+// AI Controller experiment
+//
+
 void AAIPlayerCtrl::SetupInputComponent()
 {
 	APlayerController::SetupInputComponent();

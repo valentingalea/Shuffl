@@ -40,6 +40,15 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = AR)
 	AActor* ARTable;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Bowling)
+	class APlayerStart* BowlingPinsCenter;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Bowling)
+	float BowlingPinsSpacing = 12.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Bowling)
+	UClass* BowlingPinClass;
 };
 
 inline ASceneProps::ASceneProps()

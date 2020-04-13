@@ -77,6 +77,9 @@ public:
 	UFUNCTION(BlueprintCallable)
 	virtual void SwitchToPlayView();
 
+	UFUNCTION(BlueprintCallable)
+	virtual void SetupBowling();
+
 //
 // GameMode interface (in true net play these would be RPC's)
 //
@@ -155,6 +158,7 @@ public:
 	virtual FVector2D ThrowPuck(FVector2D, float) override;
 //TODO:	virtual void ExitSpinMode(float) override; 
 	virtual FVector2D DoSlingshot() override;
+	virtual void SetupBowling() override;
 
 	virtual void SwitchToDetailView() override; // to add debug
 

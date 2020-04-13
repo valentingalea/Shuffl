@@ -51,6 +51,7 @@ namespace ChatCmd
 	static constexpr auto NextTurn = TEXT("/turn");
 	static constexpr auto Throw = TEXT("/throw");
 	static constexpr auto Move = TEXT("/move");
+	static constexpr auto Bowl = TEXT("/bowl");
 }
 
 static void RequestDebug(UWorld* world, FShufflXMPPService* xmpp)
@@ -117,6 +118,13 @@ FVector2D AXMPPPlayerCtrl::DoSlingshot()
 		ChatCmd::Throw, bit_cast(force.X), bit_cast(force.Y)));
 
 	return force;
+}
+
+void AXMPPPlayerCtrl::SetupBowling()
+{
+	Super::SetupBowling();
+
+	XMPP->SendChat(FString::Printf(TEXT("%s"), ChatCmd::Bowl));
 }
 
 void AXMPPPlayerCtrl::SwitchToDetailView()
@@ -218,6 +226,13 @@ void AXMPPPlayerSpectator::OnReceiveChat(FString msg)
 		} else {
 			ShufflErr(TEXT("received Throw cmd when puck not spawned!"));
 		}
+
+		return;
+	}
+
+	if (cmd == ChatCmd::Bowl) {
+		ShufflLog(TEXT("%s"), *cmd);
+		SetupBowling();
 
 		return;
 	}
