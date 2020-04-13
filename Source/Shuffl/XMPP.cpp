@@ -38,6 +38,11 @@ inline void TravelInvitee(const UObject* context, EPuckColor color)
 
 void FShufflXMPPService::Login(EPuckColor color)
 {
+	if (Connection.IsValid() &&
+		(Connection->GetLoginStatus() == EXmppLoginStatus::ProcessingLogin ||
+		Connection->GetLoginStatus() == EXmppLoginStatus::LoggedIn)) return;
+	//TODO: the above doensn't protect against fast calls (button spam)
+
 	Color = color;
 	SelfId = color == EPuckColor::Red ? TEXT("p1") : TEXT("p2");
 	OtherId = color == EPuckColor::Red ? TEXT("p2") : TEXT("p1");
