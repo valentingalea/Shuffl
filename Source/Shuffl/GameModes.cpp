@@ -157,6 +157,7 @@ void AShuffl2PlayersGameMode::HandleMatchIsWaitingToStart()
 		PlayerControllerClass));
 	GetWorld()->AddController(p2);
 	p2->Player = p1->Player;
+	p2->MyHUD = p1->MyHUD;
 
 	// give the player their colors
 	p1->GetPlayerState<AShufflPlayerState>()->Color = EPuckColor::Red;
@@ -264,6 +265,7 @@ void AShufflXMPPGameMode::HandleMatchIsWaitingToStart()
 		ReplaySpectatorPlayerControllerClass)); //NOTE: use this as transport for second type of controller
 	GetWorld()->AddController(p2);
 	p2->Player = p1->Player;
+	p2->MyHUD = p1->MyHUD;
 
 	ensure(UGameplayStatics::HasOption(OptionsString, XMPPGameMode::Option_PuckColor));
 	auto startPuckColor = StringToPuckColor(
