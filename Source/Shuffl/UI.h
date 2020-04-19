@@ -17,12 +17,25 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework\HUD.h"
+
 #include "UI.generated.h"
 
 //
 // the main menu HUD is too simple so it's just in Blueprint
 // Content/MainMenu/BP_MainMenuHUD
 //
+
+UENUM(BlueprintType)
+enum class ETutorialStep : uint8
+{
+	Start,
+	ShowcaseFlick,
+	ShowcaseSlingshot,
+	End
+};
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FEvent_TutorialChange, ETutorialStep, Step);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FEvent_TutorialHide);
 
 UCLASS()
 class ABoardPlayHUD : public AHUD
@@ -32,6 +45,17 @@ class ABoardPlayHUD : public AHUD
 public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Setup)
 	TSubclassOf<class UUserWidget> HUDClass;
+
+	ETutorialStep TutorialStep = ETutorialStep::Start;
+
+	UPROPERTY(BlueprintAssignable)
+	FEvent_TutorialChange OnTutorialChange;
+
+	UPROPERTY(BlueprintAssignable)
+	FEvent_TutorialHide OnTutorialHide;
+
+	void HandleTutorial();
+	void HideTutorial();
 	
 	virtual void BeginPlay() override;
 	virtual void DrawHUD() override;

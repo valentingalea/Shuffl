@@ -32,6 +32,7 @@
 #include "GameModes.h"
 #include "ScoringVolume.h"
 #include "SceneProps.h"
+#include "UI.h"
 
 //#define PRINT_THROW
 
@@ -144,6 +145,8 @@ void APlayerCtrl::HandleNewThrow()
 	if (SceneProps->ARTable) {
 		SwitchToDetailView();
 	}
+
+	HandleTutorial();
 }
 
 static FHitResult TouchStartHitResult;
@@ -152,6 +155,8 @@ void APlayerCtrl::ConsumeTouchOn(const ETouchIndex::Type fingerIndex, const FVec
 {
 	if (ARSetup) return;
 	make_sure(GetPuck());
+
+	HandleTutorial(false/*show*/);
 
 	if (fingerIndex != ETouchIndex::Touch1) {
 		GetPuck()->ThrowMode = EPuckThrowMode::WithSpin;
@@ -400,6 +405,18 @@ void APlayerCtrl::SetupBowling()
 	};
 	for (const auto& p : pins) {
 		GetWorld()->SpawnActor(SceneProps->BowlingPinClass, &p);
+	}
+}
+
+void APlayerCtrl::HandleTutorial(bool show)
+{
+	make_sure(!ARSetup && !SceneProps->ARTable);
+
+	make_sure(GetHUD());
+	if (show) {
+		GetHUD<ABoardPlayHUD>()->HandleTutorial();
+	} else {
+		GetHUD<ABoardPlayHUD>()->HideTutorial();
 	}
 }
 

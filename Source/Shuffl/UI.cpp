@@ -44,3 +44,28 @@ void ABoardPlayHUD::DrawHUD()
 	}
 #endif
 }
+
+void ABoardPlayHUD::HandleTutorial()
+{
+	switch (TutorialStep)
+	{
+	case ETutorialStep::Start:
+		TutorialStep = ETutorialStep::ShowcaseFlick;
+		break;
+	case ETutorialStep::ShowcaseFlick:
+		TutorialStep = ETutorialStep::ShowcaseSlingshot;
+		break;
+	case ETutorialStep::ShowcaseSlingshot:
+		TutorialStep = ETutorialStep::End;
+		break;
+	case ETutorialStep::End:
+		return;
+	}
+
+	OnTutorialChange.Broadcast(TutorialStep);
+}
+
+void ABoardPlayHUD::HideTutorial()
+{
+	OnTutorialHide.Broadcast();
+}

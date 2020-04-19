@@ -265,3 +265,8 @@ void AXMPPPlayerSpectator::OnReceiveChat(FString msg)
 		return;
 	}
 }
+
+void AXMPPPlayerSpectator::HandleTutorial(bool)
+{
+	/* spectators don't show the tutorial */
+}

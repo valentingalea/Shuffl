@@ -127,6 +127,8 @@ protected:
 	FVector SlingshotDir = FVector::ZeroVector;
 	void PreviewSlingshot(FVector);
 	virtual FVector2D DoSlingshot();
+
+	virtual void HandleTutorial(bool show = true);
 };
 
 inline APuck* APlayerCtrl::GetPuck()
@@ -177,6 +179,7 @@ public:
 
 	virtual void RequestNewThrow() override;
 	virtual void SwitchToDetailView() override; // to add debug
+	virtual void HandleTutorial(bool /*show*/) override;
 
 	void OnReceiveChat(FString);
 
