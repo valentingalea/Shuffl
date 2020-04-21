@@ -410,7 +410,8 @@ void APlayerCtrl::SetupBowling()
 
 void APlayerCtrl::HandleTutorial(bool show)
 {
-	make_sure(!ARSetup && !SceneProps->ARTable);
+	if (ARSetup || SceneProps->ARTable) return;
+	if (GetWorld()->WorldType == EWorldType::PIE) return; // gets tiresome in editor
 
 	make_sure(GetHUD());
 	if (show) {
