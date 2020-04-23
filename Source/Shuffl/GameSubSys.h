@@ -63,6 +63,9 @@ public:
 	UFUNCTION(BlueprintPure)
 	static int ShufflGetWinningScore();
 
+	UFUNCTION(BlueprintPure)
+	static FString ShufflGetVersion();
+
 //
 // XMPP multiplayer chat
 //

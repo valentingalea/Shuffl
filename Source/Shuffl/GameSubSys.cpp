@@ -16,6 +16,8 @@
 #include "GameSubSys.h"
 #include "Engine/Engine.h"
 #include "Engine/GameInstance.h"
+#include "Misc/ConfigCacheIni.h"
+#include "CoreGlobals.h"
 
 #include "Shuffl.h"
 #include "GameModes.h"
@@ -63,6 +65,14 @@ class APlayerController* UGameSubSys::ShufflGetActivePlayerCtrl(const UObject* W
 int UGameSubSys::ShufflGetWinningScore()
 {
 	return ERound::WinningScore;
+}
+
+FString UGameSubSys::ShufflGetVersion()
+{
+	FString version;
+	GConfig->GetString(TEXT("/Script/EngineSettings.GeneralProjectSettings"),
+		TEXT("ProjectVersion"), version, GGameIni);
+	return version;
 }
 
 void UGameSubSys::Initialize(FSubsystemCollectionBase& Collection)
