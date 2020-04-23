@@ -102,7 +102,7 @@ void AShufflCommonGameMode::CalculateRoundScore(EPuckColor &winnerColor, int &to
 	// iterate on pucks and get their score
 	totalScore = 0;
 	bool foundWinner = false;
-	winnerColor = EPuckColor::Red; //TODO: handle draw
+	winnerColor = EPuckColor::Red; // choose a default, BP will handle it properly
 	for (APuck* p : pucks) {
 		int score = GetPointsForPuck(p);
 
