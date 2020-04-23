@@ -62,7 +62,7 @@ UStaticMeshComponent* APuck::GetPuck()
 
 void APuck::Tick(float deltaTime)
 {
-	if (State != EPuckState::Traveling && State != EPuckState::Traveling_WithSpin) return;
+	if (State == EPuckState::Setup) return;
 
 	Lifetime += deltaTime;
 	FVector vel = GetPuck()->GetPhysicsLinearVelocity();
@@ -78,14 +78,36 @@ void APuck::Tick(float deltaTime)
 		}
 	}
 
+	if (State == EPuckState::Resting) {
+		if (Lifetime > TimeResting) {
+			OnResting();
+		}
+		return; 
+	}
+
 	if ((vel.SizeSquared() < .0001f) && Lifetime > ThresholdToResting) {
 		State = EPuckState::Resting;
-		OnResting();
+
+		bool scored = false;
+		for (auto i = TActorIterator<AScoringVolume>(GetWorld()); i; ++i) {
+			FBox scoreVol = i->GetBounds().GetBox();
+			if (scoreVol.IsInside(GetActorLocation())) {
+				scored = true;
+				break;
+			}
+		}
+		if (scored) {
+			Lifetime = 0.f; // recyle to count resting time and go again
+		} else {
+			OnResting(); // change turn immediately
+		}
 	}
 }
 
 void APuck::OnResting()
 {
+	SetActorTickEnabled(false); // don't bother updating anymore once fully rested
+
 	auto iter = TActorIterator<ASceneProps>(GetWorld());
 	make_sure(*iter);
 	auto *SceneProps = Cast<ASceneProps>(*iter);

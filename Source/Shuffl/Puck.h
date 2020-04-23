@@ -36,12 +36,16 @@ public:
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = Puck)
 	float Radius = 2.5f; //cm
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Debug)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Puck)
 	float SpringArmLenghtOnZoom = 15.f;
 
 	/** Time in sec to allow for until puck is checked for rest (no velocity) */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Debug)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Puck)
 	float ThresholdToResting = 3.f;
+
+	/** Time in sec to wait (after puck is resting) before triggering new throw */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Puck)
+	float TimeResting = 1.f;
 
 	EPuckThrowMode ThrowMode = EPuckThrowMode::Simple;
 	int TurnId = 0;
