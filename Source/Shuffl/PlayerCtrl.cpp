@@ -98,7 +98,7 @@ void APlayerCtrl::OnQuit()
 
 void APlayerCtrl::RequestNewThrow()
 {
-	if (PlayMode == EPlayerCtrlMode::Setup) return;
+	if (PlayMode == EPlayerCtrlMode::Setup && !SceneProps->ARTable) return;
 
 	GetWorld()->GetAuthGameMode<AShufflCommonGameMode>()->NextTurn();
 }
