@@ -70,6 +70,11 @@ void AShufflCommonGameMode::SetupRound()
 			pc->GetPlayerState<AShufflPlayerState>()->Score = 0;
 		}
 	}
+	
+	// for fairness swap the players each round (except the starting one)
+	if (GetGameState<AShufflGameState>()->GlobalTurnCounter) {
+		Swap(PlayOrder[0], PlayOrder[1]);
+	}
 }
 
 void AShufflCommonGameMode::CalculateRoundScore(EPuckColor &winnerColor, int &totalScore)
@@ -128,6 +133,11 @@ void AShufflPracticeGameMode::HandleMatchHasStarted()
 {
 	Super::HandleMatchHasStarted();
 
+	// only 1 player
+	auto* game_state = GetGameState<AShufflGameState>();
+	game_state->ActiveLocalPlayerCtrlIndex = 0;
+	PlayOrder[0] = GetWorld()->GetPlayerControllerIterator()->Get();
+
 	if (AutoTurnStart) {
 		NextTurn();
 	}
@@ -156,12 +166,15 @@ void AShuffl2PlayersGameMode::HandleMatchIsWaitingToStart()
 		p1->K2_GetActorLocation(), p1->K2_GetActorRotation(),
 		PlayerControllerClass));
 	GetWorld()->AddController(p2);
-	p2->Player = p1->Player;
+	RealPlayer = p2->Player = p1->Player;
 	p2->MyHUD = p1->MyHUD;
 
 	// give the player their colors
 	p1->GetPlayerState<AShufflPlayerState>()->Color = EPuckColor::Red;
 	p2->GetPlayerState<AShufflPlayerState>()->Color = EPuckColor::Blue;
+
+	PlayOrder[0] = p1;
+	PlayOrder[1] = p2;
 }
 
 void AShuffl2PlayersGameMode::StartMatch()
@@ -176,7 +189,8 @@ void AShuffl2PlayersGameMode::StartMatch()
 
 void AShuffl2PlayersGameMode::NextTurn()
 {
-	auto iterator = GetWorld()->GetPlayerControllerIterator();
+	ensure(RealPlayer);
+	auto *iterator = PlayOrder;
 	APlayerCtrl *next_player, *curr_player = nullptr;
 	decltype(MatchState) desiredState;
 
@@ -227,7 +241,7 @@ void AShuffl2PlayersGameMode::NextTurn()
 		desiredState == MatchState::Round_Player1 ? 0 : 1;
 	SetMatchState(desiredState);
 
-	curr_player->Player->SwitchController(next_player);
+	RealPlayer->SwitchController(next_player);
 	next_player->HandleNewThrow();
 }
 
@@ -244,11 +258,14 @@ void AShufflAgainstAIGameMode::HandleMatchIsWaitingToStart()
 		p1->K2_GetActorLocation(), p1->K2_GetActorRotation(),
 		ReplaySpectatorPlayerControllerClass)); //NOTE: use this as transport for the AI pc
 	GetWorld()->AddController(p2);
-	p2->Player = p1->Player;
+	RealPlayer = p2->Player = p1->Player;
 
 	// give the player their colors
 	p1->GetPlayerState<AShufflPlayerState>()->Color = EPuckColor::Red;
 	p2->GetPlayerState<AShufflPlayerState>()->Color = EPuckColor::Blue;
+
+	PlayOrder[0] = p1;
+	PlayOrder[1] = p2;
 }
 
 void AShufflXMPPGameMode::HandleMatchIsWaitingToStart()
@@ -264,7 +281,7 @@ void AShufflXMPPGameMode::HandleMatchIsWaitingToStart()
 		p1->K2_GetActorLocation(), p1->K2_GetActorRotation(),
 		ReplaySpectatorPlayerControllerClass)); //NOTE: use this as transport for second type of controller
 	GetWorld()->AddController(p2);
-	p2->Player = p1->Player;
+	RealPlayer = p2->Player = p1->Player;
 	p2->MyHUD = p1->MyHUD;
 
 	ensure(UGameplayStatics::HasOption(OptionsString, XMPPGameMode::Option_PuckColor));
@@ -279,4 +296,7 @@ void AShufflXMPPGameMode::HandleMatchIsWaitingToStart()
 		p1->GetPlayerState<AShufflPlayerState>()->Color = OppositePuckColor(startPuckColor);
 		p2->GetPlayerState<AShufflPlayerState>()->Color = startPuckColor;
 	}
+
+	PlayOrder[0] = p1;
+	PlayOrder[1] = p2;
 }

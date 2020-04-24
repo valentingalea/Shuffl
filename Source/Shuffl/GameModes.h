@@ -68,6 +68,9 @@ public:
 	void CalculateRoundScore(EPuckColor &, int &);
 
 	virtual void NextTurn() { /*interface*/ }
+
+	class APlayerController* PlayOrder[2] = { nullptr, nullptr };
+	class UPlayer* RealPlayer = nullptr;
 };
 
 UCLASS()

@@ -49,14 +49,13 @@ class APlayerController* UGameSubSys::ShufflGetActivePlayerCtrl(const UObject* W
 	if (UWorld* World = GEngine->GetWorldFromContextObject(WorldContextObject, 
 		EGetWorldErrorMode::LogAndReturnNull))
 	{
-		auto it = World->GetPlayerControllerIterator();
-		auto *game_state = World->GetGameState<AShufflGameState>();
-
-		if (game_state->ActiveLocalPlayerCtrlIndex == 0) {
-			return it->Get();
+		const auto &order = World->GetAuthGameMode<AShufflCommonGameMode>()->PlayOrder;
+		const auto *game_state = World->GetGameState<AShufflGameState>();
+		if (auto *pc = order[game_state->ActiveLocalPlayerCtrlIndex % 2]) {
+			return pc;
 		} else {
-			it++;
-			return it->Get();
+			// called too early (from BP probably) just get a safe value
+			return World->GetPlayerControllerIterator()->Get();
 		}
 	}
 	return nullptr;
