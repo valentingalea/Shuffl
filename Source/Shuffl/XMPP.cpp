@@ -102,16 +102,6 @@ void FShufflXMPPService::StartGame(const UObject* context)
 {
 	make_sure(Connection.IsValid());
 
-	// if playing from PIE just start the games directly NOTE: buggy
-	if (UWorld* world = GEngine->GetWorldFromContextObject(context,
-		EGetWorldErrorMode::ReturnNull)) {
-		if (world->WorldType == EWorldType::PIE) {
-			TravelHost(context, Color);
-			SendChat(TEXT("/travel-pie"));
-			return;
-		}
-	}
-
 	HandshakeSyn = FMath::Rand();
 	SendChat(FString::Printf(TEXT("/travel-syn %i"), HandshakeSyn));
 }
@@ -175,12 +165,6 @@ void FShufflXMPPService::OnChat(const TSharedRef<IXmppConnection>& connection,
 
 	if (cmd == TEXT("/travel")) {
 		TravelHost(sys->GetWorldContext(), Color);
-		return;
-	}
-
-	// special fast-track case for when playing in the Editor NOTE: buggy
-	if (cmd == TEXT("/travel-pie")) {
-		TravelInvitee(sys->GetWorldContext(), Color);
 		return;
 	}
 

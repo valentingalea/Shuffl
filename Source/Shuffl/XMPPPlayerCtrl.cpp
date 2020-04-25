@@ -51,23 +51,8 @@ namespace ChatCmd
 	static constexpr auto NextTurn = TEXT("/turn");
 	static constexpr auto Throw = TEXT("/throw");
 	static constexpr auto Move = TEXT("/move");
+	static constexpr auto Sync = TEXT("/sync");
 	static constexpr auto Bowl = TEXT("/bowl");
-}
-
-static void RequestDebug(UWorld* world, FShufflXMPPService* xmpp)
-{
-	FString out = TEXT("/debug ?");
-	int num = 0;
-
-	for (auto i = TActorIterator<APuck>(world); i; ++i) {
-		FVector p = i->GetActorLocation();
-		out += FString::Printf(TEXT(" %i %i %i %i"),
-			i->TurnId, bit_cast(p.X), bit_cast(p.Y), bit_cast(p.Z));
-		num++;
-	}
-
-	out = out.Replace(TEXT("?"), *FString::Printf(TEXT("%i"), num));
-	xmpp->SendChat(out);
 }
 
 void AXMPPPlayerCtrl::BeginPlay()
@@ -130,8 +115,24 @@ void AXMPPPlayerCtrl::SetupBowling()
 void AXMPPPlayerCtrl::SwitchToDetailView()
 {
 	Super::SwitchToDetailView();
+}
 
-	RequestDebug(GetWorld(), XMPP);
+void AXMPPPlayerCtrl::SendSync()
+{
+	FString out;
+	int num = 0;
+	for (auto i = TActorIterator<APuck>(GetWorld()); i; ++i) {
+		if ((*i) == GetPuck()) continue;
+
+		FVector p = i->GetActorLocation();
+		out += FString::Printf(TEXT(" %i %i %i %i"),
+			i->TurnId, bit_cast(p.X), bit_cast(p.Y), bit_cast(p.Z));
+		num++;
+	}
+
+	if (num) {
+		XMPP->SendChat(FString::Printf(TEXT("%s %i %s"), ChatCmd::Sync, num, *out));
+	}
 }
 
 void AXMPPPlayerSpectator::BeginPlay()
@@ -167,8 +168,6 @@ void AXMPPPlayerSpectator::RequestNewThrow()
 void AXMPPPlayerSpectator::SwitchToDetailView()
 {
 	Super::SwitchToDetailView();
-
-	RequestDebug(GetWorld(), XMPP);
 }
 
 void AXMPPPlayerSpectator::OnReceiveChat(FString msg)
@@ -181,7 +180,7 @@ void AXMPPPlayerSpectator::OnReceiveChat(FString msg)
 	if (cmd == ChatCmd::NextTurn) {
 		auto* gameState = Cast<AShufflGameState>(GetWorld()->GetGameState());
 		int turnId = FCString::Atoi(*args[1]);
-		ShufflLog(TEXT("%s %i"), *cmd, turnId);
+	//	ShufflLog(TEXT("%s %i"), *cmd, turnId);
 
 		if (turnId == gameState->GlobalTurnCounter) {
 			GetWorld()->GetAuthGameMode<AShufflCommonGameMode>()->NextTurn();
@@ -197,7 +196,7 @@ void AXMPPPlayerSpectator::OnReceiveChat(FString msg)
 		float X = bit_cast(FCString::Atoi(*args[1]));
 		float Y = bit_cast(FCString::Atoi(*args[2]));
 		float Z = bit_cast(FCString::Atoi(*args[3]));
-		ShufflLog(TEXT("%s (%f) (%f) (%f)"), *cmd, X, Y, Z);
+	//	ShufflLog(TEXT("%s (%f) (%f) (%f)"), *cmd, X, Y, Z);
 
 		if (GetPuck()) {
 			GetPuck()->MoveTo(FVector(X, Y, Z));
@@ -213,7 +212,7 @@ void AXMPPPlayerSpectator::OnReceiveChat(FString msg)
 	if (cmd == ChatCmd::Throw) {
 		float X = bit_cast(FCString::Atoi(*args[1]));
 		float Y = bit_cast(FCString::Atoi(*args[2]));
-		ShufflLog(TEXT("%s (%f) (%f)"), *cmd, X, Y);
+	//	ShufflLog(TEXT("%s (%f) (%f)"), *cmd, X, Y);
 
 		if (X > ThrowForceMax || Y > ThrowForceMax) {
 			ShufflLog(TEXT("received invalid force!"));
@@ -237,9 +236,11 @@ void AXMPPPlayerSpectator::OnReceiveChat(FString msg)
 		return;
 	}
 
-	if (cmd == TEXT("/debug")) {
-		TMap<int, FVector> other_pos;
+	if (cmd == ChatCmd::Sync) {
+		ShufflLog(TEXT("%s"), *msg);
 		int num = FCString::Atoi(*args[1]);
+		if (num <= 0) return;
+		TMap<int, FVector> other_pos;
 
 		for (int i = 2; i < 2 + num * 4;) {
 			int turnId = FCString::Atoi(*args[i++]);
@@ -251,15 +252,22 @@ void AXMPPPlayerSpectator::OnReceiveChat(FString msg)
 
 		static uint64 id = 0;
 		for (auto i = TActorIterator<APuck>(GetWorld()); i; ++i) {
-			if (!other_pos.Contains(i->TurnId)) continue;
+			if (!other_pos.Contains(i->TurnId)) {
+				auto* gameState = Cast<AShufflGameState>(GetWorld()->GetGameState());
+			//	ShufflLog(TEXT("found bad puck during sync: %i <- %i"), 
+			//		gameState->GlobalTurnCounter, i->TurnId);
+				continue;
+			}
 
 			const FVector p = i->GetActorLocation();
 			const FVector other_p = *other_pos.Find(i->TurnId);
 			const FVector d = p - other_p;
+			if (d.Size() > .05f) {
+				ShufflLog(TEXT("found puck diff by %3.2f"), d.Size());
+			}
 
-			FString dbg = FString::Printf(TEXT("%i: %1.6f | %1.6f | %1.6f"),
-				i->TurnId, FMath::Abs(d.X), FMath::Abs(d.Y), FMath::Abs(d.Z));
-			ShufflLog(TEXT("%s"), *dbg);
+			i->SetActorLocation(other_p, false, nullptr, ETeleportType::ResetPhysics);
+			//TODO: set rotation as well and reset?
 		}
 
 		return;

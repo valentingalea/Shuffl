@@ -365,6 +365,7 @@ void APlayerCtrl::SwitchToDetailView()
 
 void APlayerCtrl::SwitchToPlayView()
 {
+	if (!GetPuck()) return;
 	SetViewTargetWithBlend(GetPuck(), 0.f);
 }
 

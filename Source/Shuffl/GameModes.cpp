@@ -300,3 +300,12 @@ void AShufflXMPPGameMode::HandleMatchIsWaitingToStart()
 	PlayOrder[0] = p1;
 	PlayOrder[1] = p2;
 }
+
+void AShufflXMPPGameMode::NextTurn()
+{
+	Super::NextTurn();
+
+	if (auto* pc = Cast<AXMPPPlayerCtrl>(RealPlayer->GetPlayerController(GetWorld()))) {
+		pc->SendSync();
+	}
+}
