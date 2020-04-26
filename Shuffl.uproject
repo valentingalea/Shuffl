@@ -188,7 +188,7 @@
 		},
 		{
 			"Name": "OculusVR",
-			"Enabled": true,
+			"Enabled": false,
 			"SupportedTargetPlatforms": [
 				"Win32",
 				"Win64",
@@ -197,7 +197,7 @@
 		},
 		{
 			"Name": "SteamVR",
-			"Enabled": true,
+			"Enabled": false,
 			"SupportedTargetPlatforms": [
 				"Win32",
 				"Win64",
