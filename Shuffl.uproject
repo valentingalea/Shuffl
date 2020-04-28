@@ -197,7 +197,7 @@
 		},
 		{
 			"Name": "SteamVR",
-			"Enabled": false,
+			"Enabled": true,
 			"SupportedTargetPlatforms": [
 				"Win32",
 				"Win64",
