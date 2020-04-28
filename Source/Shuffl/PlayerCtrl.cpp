@@ -76,10 +76,6 @@ void APlayerCtrl::SetupInputComponent() //TODO: extract the action names into sh
 
 	InputComponent->BindAction("Quit", IE_Released, this, &APlayerCtrl::OnQuit);
 
-	constexpr auto dv = "DetailView";
-	InputComponent->BindAction(dv, IE_Pressed, this, &APlayerCtrl::SwitchToDetailView);
-	InputComponent->BindAction(dv, IE_Released, this, &APlayerCtrl::SwitchToPlayView);
-
 	InputComponent->BindAction("Rethrow", IE_Released, this, &APlayerCtrl::RequestNewThrow);
 
 	InputComponent->BindTouch(EInputEvent::IE_Pressed, this, &APlayerCtrl::ConsumeTouchOn);
@@ -372,8 +368,6 @@ void APlayerCtrl::SwitchToPlayView()
 void APlayerCtrl::HandleScoreCounting(EPuckColor winnerColor,
 	int winnerTotalScore, int winnerRoundScore)
 {
-	SwitchToDetailView();
-
 	auto sys = UGameSubSys::Get(this);
 	sys->ScoreChanged.Broadcast(winnerColor, winnerTotalScore, winnerRoundScore);
 }
