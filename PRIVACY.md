@@ -2,7 +2,7 @@
 
 Last updated: April 30, 2020
 
-This Privacy Policy describes Our policies and procedures on the collection, use and disclosure of Your information when You use the Service and tells You about Your privacy rights and how the law protects You.
+This Privacy Policy describes Our policies and procedures on the collection, use and disclosure of Your information when You use the Application and tells You about Your privacy rights and how the law protects You.
 
 *NO* Personal data is gathered, collected, or processed by the Application.
 
@@ -17,11 +17,11 @@ Definitions
 
 For the purposes of this Privacy Policy:
 
-    You means the individual accessing or using the Service, or the company, or other legal entity on behalf of which such individual is accessing or using the Service, as applicable.
+    You means the individual accessing or using the Application, or the company, or other legal entity on behalf of which such individual is accessing or using the Application, as applicable.
 
     We means the authors of the Application
 
-    Application means the object interaction that this policy covers
+    Application is the material You interact with and the subject of this policy
 
 ## Collecting and Using Your Personal Data
 
