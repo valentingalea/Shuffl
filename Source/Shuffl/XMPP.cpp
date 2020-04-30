@@ -81,6 +81,9 @@ void FShufflXMPPService::OnLogin(const FXmppUserJid& userJid, bool bWasSuccess, 
 	Connection->PrivateChat()->OnReceiveChat().AddRaw(this, &FShufflXMPPService::OnChat);
 
 	LoginTimestamp = FDateTime::UtcNow();
+	if (auto sys = UGameSubSys::Get(UGameSubSys::GetWorldContext())) {
+		sys->OnXMPPUserLoginChange.Broadcast(true);
+	}
 }
 
 void FShufflXMPPService::Logout()
@@ -89,9 +92,15 @@ void FShufflXMPPService::Logout()
 		(Connection->GetLoginStatus() == EXmppLoginStatus::LoggedIn))) return;
 
 	Connection->OnLogoutComplete().AddLambda(
-		[](const FXmppUserJid& userJid, bool bWasSuccess, const FString& /*unused*/) {
+		[&time = LoginTimestamp](const FXmppUserJid& userJid, bool bWasSuccess,
+			const FString& /*unused*/) {
 		ShufflLog(TEXT("Logout UserJid=%s Success=%s"),
 			*userJid.GetFullPath(), bWasSuccess ? TEXT("true") : TEXT("false"));
+
+		time = FDateTime(0);
+		if (auto sys = UGameSubSys::Get(UGameSubSys::GetWorldContext())) {
+			sys->OnXMPPUserLoginChange.Broadcast(false);
+		}
 	});
 
 	Connection->Logout();

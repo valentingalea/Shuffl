@@ -44,7 +44,7 @@ struct FShufflXMPPService
 	EPuckColor Color;
 	FString SelfId;
 	FString OtherId;
-	FDateTime LoginTimestamp;
+	FDateTime LoginTimestamp = FDateTime(0);
 	int32 HandshakeSyn;
 	int32 HandshakeAck;
 };

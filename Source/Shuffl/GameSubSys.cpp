@@ -83,6 +83,11 @@ void UGameSubSys::Deinitialize()
 	XMPP.Logout();
 }
 
+bool UGameSubSys::XMPPGetLoggedIn(const UObject* context)
+{
+	return Get(context)->XMPP.LoginTimestamp != FDateTime(0);
+}
+
 void UGameSubSys::XMPPLogin(const UObject* context, EPuckColor color)
 {
 	Get(context)->XMPP.Login(color);

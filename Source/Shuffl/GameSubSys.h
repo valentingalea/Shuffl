@@ -30,7 +30,10 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FEvent_ScoreChanged,
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FEvent_PlayersChangeTurn,
 							EPuckColor, NewColor);
 
-DECLARE_MULTICAST_DELEGATE_OneParam(FEvent_XMPPChatReceived, FString);
+DECLARE_MULTICAST_DELEGATE_OneParam(FEvent_XMPPChatReceived,
+							FString);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FEvent_XMPPUserLoginChange,
+							bool, LoggedIn);
 
 
 UCLASS()
@@ -69,6 +72,9 @@ public:
 //
 // XMPP multiplayer chat
 //
+	UFUNCTION(BlueprintPure, meta = (WorldContext = "WorldContextObject"))
+	static bool XMPPGetLoggedIn(const UObject* WorldContextObject);
+
 	UFUNCTION(BlueprintCallable, meta = (WorldContext = "WorldContextObject"))
 	static void XMPPLogin(const UObject* WorldContextObject, EPuckColor Color);
 
@@ -82,4 +88,7 @@ public:
 	FShufflXMPPService XMPP;
 
 	FEvent_XMPPChatReceived OnXMPPChatReceived;
+
+	UPROPERTY(BlueprintAssignable)
+	FEvent_XMPPUserLoginChange OnXMPPUserLoginChange;
 };
