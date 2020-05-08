@@ -16,8 +16,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework\Actor.h"
-#include "GameFramework\PlayerController.h"
+#include "GameFramework/Actor.h"
+#include "GameFramework/PlayerController.h"
 
 #include "Puck.h"
 
