@@ -227,10 +227,109 @@
 			"SupportedTargetPlatforms": [
 				"Android"
 			]
+		},
+		{
+			"Name": "OnlineSubsystemGooglePlay",
+			"Enabled": false,
+			"SupportedTargetPlatforms": [
+				"Android"
+			]
+		},
+		{
+			"Name": "OnlineSubsystemIOS",
+			"Enabled": false,
+			"SupportedTargetPlatforms": [
+				"IOS",
+				"TVOS"
+			]
+		},
+		{
+			"Name": "OnlineSubsystemNull",
+			"Enabled": false
+		},
+		{
+			"Name": "OnlineSubsystemUtils",
+			"Enabled": false
+		},
+		{
+			"Name": "OnlineSubsystem",
+			"Enabled": false
+		},
+		{
+			"Name": "AppleARKit",
+			"Enabled": true,
+			"SupportedTargetPlatforms": [
+				"IOS"
+			]
+		},
+		{
+			"Name": "ArchVisCharacter",
+			"Enabled": false
+		},
+		{
+			"Name": "CharacterAI",
+			"Enabled": false
+		},
+		{
+			"Name": "ActorLayerUtilities",
+			"Enabled": false
+		},
+		{
+			"Name": "ActorSequence",
+			"Enabled": false
+		},
+		{
+			"Name": "AISupport",
+			"Enabled": false
+		},
+		{
+			"Name": "AssetTags",
+			"Enabled": false
+		},
+		{
+			"Name": "AutomationUtils",
+			"Enabled": false
+		},
+		{
+			"Name": "DataValidation",
+			"Enabled": false
+		},
+		{
+			"Name": "FacialAnimation",
+			"Enabled": false
+		},
+		{
+			"Name": "GeometryCache",
+			"Enabled": false
+		},
+		{
+			"Name": "LauncherChunkInstaller",
+			"Enabled": false
+		},
+		{
+			"Name": "NUTUnrealEngine4",
+			"Enabled": false
+		},
+		{
+			"Name": "NetcodeUnitTest",
+			"Enabled": false
+		},
+		{
+			"Name": "RuntimePhysXCooking",
+			"Enabled": false
+		},
+		{
+			"Name": "TcpMessaging",
+			"Enabled": false
+		},
+		{
+			"Name": "UdpMessaging",
+			"Enabled": false
 		}
 	],
 	"TargetPlatforms": [
 		"Android",
-		"WindowsNoEditor"
+		"WindowsNoEditor",
+		"IOS"
 	]
 }
