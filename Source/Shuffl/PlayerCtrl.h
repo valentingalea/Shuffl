@@ -38,35 +38,35 @@ public:
 	UClass* PawnClass;
 
 	/** axis of allowed puck placement */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Throwing)
-	FVector StartingLine = FVector(0, 51.f/*cm*/, 0);
+	UPROPERTY(Config, VisibleAnywhere, BlueprintReadOnly, Category = Throwing)
+	FVector StartingLine;
 
 	/**
 	 * pixels per sec
 	 * Galaxy S9 screen: average ~2000 for short(normal) thumb flick
 	 * Logitech G305 mouse: about same but can easily double
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Throwing)
-	float EscapeVelocity = 100.f;
+	UPROPERTY(Config, VisibleAnywhere, BlueprintReadOnly, Category = Throwing)
+	float EscapeVelocity;
 
 	/** divider for the flick velocity */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Throwing)
-	float ThrowForceScaling = 25.f;
+	UPROPERTY(Config, EditAnywhere, BlueprintReadWrite, Category = Throwing)
+	float ThrowForceScaling;
 
 	/** upper limit for the puck throw velocity after scaling has been applied */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Throwing)
-	float ThrowForceMax = 150.f;
+	UPROPERTY(Config, VisibleAnywhere, BlueprintReadOnly, Category = Throwing)
+	float ThrowForceMax;
 
 	/** seconds */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Spin)
-	float SpinTime = 3.f;
+	UPROPERTY(Config, VisibleAnywhere, BlueprintReadOnly, Category = Spin)
+	float SpinTime;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Spin)
-	float SpinSlowMoFactor = .1f;
+	UPROPERTY(Config, VisibleAnywhere, BlueprintReadOnly, Category = Spin)
+	float SpinSlowMoFactor;
 
 	/** multiplier for the slingshot effect */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Slingshot)
-	float SlingshotForceScaling = 5.f;
+	UPROPERTY(Config, EditAnywhere, BlueprintReadWrite, Category = Slingshot)
+	float SlingshotForceScaling;
 
 	UFUNCTION(BlueprintCallable)
 	virtual void RequestNewThrow();
