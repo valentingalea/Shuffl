@@ -26,6 +26,7 @@
 #include "GameFramework/PlayerState.h"
 #include "DrawDebugHelpers.h"
 #include "Math/UnrealMathUtility.h"
+#include "Misc/ScopeExit.h"
 
 #include "Shuffl.h"
 #include "GameSubSys.h"
@@ -66,7 +67,9 @@ void APlayerCtrl::BeginPlay()
 
 	StartingPoint = SceneProps->StartingPoint->GetActorLocation();
 
+#ifdef TOUCH_HISTORY
 	TouchHistory.Reserve(64);
+#endif
 	PlayMode = EPlayerCtrlMode::Setup;
 }
 
@@ -145,12 +148,14 @@ void APlayerCtrl::HandleNewThrow()
 	HandleTutorial();
 }
 
+// "OK" to be statics are these are used only for the duration of touch events
 static FHitResult TouchStartHitResult;
+static bool ProhibitFurtherTouch = false; // to handle all exit-conditions at TouchOn
 
 void APlayerCtrl::ConsumeTouchOn(const ETouchIndex::Type fingerIndex, const FVector location)
 {
-	if (ARSetup) return;
-	make_sure(GetPuck());
+	ProhibitFurtherTouch = ARSetup || !GetPuck();
+	if (ProhibitFurtherTouch) return;
 
 	HandleTutorial(false/*show*/);
 
@@ -171,14 +176,15 @@ void APlayerCtrl::ConsumeTouchOn(const ETouchIndex::Type fingerIndex, const FVec
 	ThrowStartPoint = FVector2D(location);
 	TouchStartHitResult = ProjectScreenPoint(this, ThrowStartPoint);
 
+#ifdef TOUCH_HISTORY
 	TouchHistory.Reset();
 	TouchHistory.Add(ThrowStartPoint);
+#endif
 }
 
 void APlayerCtrl::ConsumeTouchRepeat(const ETouchIndex::Type fingerIndex, const FVector location)
 {
-	if (ARSetup) return;
-	make_sure(GetPuck());
+	if (ProhibitFurtherTouch) return;
 
 	if (fingerIndex != ETouchIndex::Touch1) {
 		GetPuck()->ThrowMode = EPuckThrowMode::WithSpin;
@@ -200,16 +206,20 @@ void APlayerCtrl::ConsumeTouchRepeat(const ETouchIndex::Type fingerIndex, const 
 		PlayMode = EPlayerCtrlMode::Throw;
 	}
 
+#ifdef TOUCH_HISTORY
 	TouchHistory.Add(FVector2D(location));
+#endif
 }
 
 void APlayerCtrl::ConsumeTouchOff(const ETouchIndex::Type fingerIndex, const FVector location)
 {
-	if (ARSetup) return;
-	make_sure(GetPuck());
+	if (ProhibitFurtherTouch) return;
 
 	if (fingerIndex != ETouchIndex::Touch1) return;
 	if (PlayMode == EPlayerCtrlMode::Observe) return;
+
+	// make sure a TouchOff is paired with a TouchOn, as UI presses can still trigger us
+	if (ThrowStartTime < 1.f) return;
 
 	float deltaTime = GetWorld()->GetRealTimeSeconds() - ThrowStartTime;
 	FVector2D gestureEndPoint = FVector2D(location);
@@ -218,6 +228,9 @@ void APlayerCtrl::ConsumeTouchOff(const ETouchIndex::Type fingerIndex, const FVe
 	float velocity = distance / deltaTime;
 	float angle = FMath::Atan2(-gestureVector.X, -gestureVector.Y) + PI / 2.f;
 		// need to rotate otherwise it's 0 when drawing straight throw (screen lenghtwise)
+
+	// reset for next cycle of checks
+	ON_SCOPE_EXIT{ ThrowStartTime = 0.f; };
 
 	if (PlayMode == EPlayerCtrlMode::Spin) {
 		CalculateSpin(location);

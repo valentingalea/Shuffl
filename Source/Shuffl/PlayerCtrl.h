@@ -102,7 +102,9 @@ protected:
 	void ConsumeTouchOn(const ETouchIndex::Type, const FVector);
 	void ConsumeTouchRepeat(const ETouchIndex::Type, const FVector);
 	void ConsumeTouchOff(const ETouchIndex::Type, const FVector);
+#ifdef TOUCH_HISTORY
 	TArray<FVector2D> TouchHistory;
+#endif
 
 //
 // Flick mode
