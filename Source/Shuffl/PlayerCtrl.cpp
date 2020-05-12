@@ -186,6 +186,9 @@ void APlayerCtrl::ConsumeTouchRepeat(const ETouchIndex::Type fingerIndex, const 
 {
 	if (ProhibitFurtherTouch) return;
 
+	// iOS seems to receive random Repeat touch events with no starting On
+	if (ThrowStartTime == 0.f) return;
+
 	if (fingerIndex != ETouchIndex::Touch1) {
 		GetPuck()->ThrowMode = EPuckThrowMode::WithSpin;
 		return;
@@ -219,7 +222,7 @@ void APlayerCtrl::ConsumeTouchOff(const ETouchIndex::Type fingerIndex, const FVe
 	if (PlayMode == EPlayerCtrlMode::Observe) return;
 
 	// make sure a TouchOff is paired with a TouchOn, as UI presses can still trigger us
-	if (ThrowStartTime < 1.f) return;
+	if (ThrowStartTime == 0.f) return;
 
 	float deltaTime = GetWorld()->GetRealTimeSeconds() - ThrowStartTime;
 	FVector2D gestureEndPoint = FVector2D(location);
