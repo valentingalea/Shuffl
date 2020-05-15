@@ -67,7 +67,7 @@ void AShufflCommonGameMode::SetupRound()
 	if (GetMatchState() == MatchState::Round_WinnerDeclared) {
 		for (auto i = GetWorld()->GetPlayerControllerIterator(); i; ++i) {
 			auto* pc = Cast<APlayerCtrl>(i->Get());
-			pc->GetPlayerState<AShufflPlayerState>()->Score = 0;
+			pc->GetPlayerState<AShufflPlayerState>()->SetScore(0);
 		}
 	}
 	
@@ -221,16 +221,16 @@ void AShuffl2PlayersGameMode::NextTurn()
 		CalculateRoundScore(winner_color, round_score);
 		AShufflPlayerState* winner_player = winner_color == curr_player_state->Color ?
 			curr_player_state : next_player_state;
-		winner_player->Score += round_score;
+		winner_player->SetScore(winner_player->GetScore() + round_score);
 
-		if (winner_player->Score >= UGameSubSys::ShufflGetWinningScore()) {
+		if (winner_player->GetScore() >= UGameSubSys::ShufflGetWinningScore()) {
 			SetMatchState(MatchState::Round_WinnerDeclared);
 		} else {
 			SetMatchState(MatchState::Round_End);
 		}
 
 		curr_player->HandleScoreCounting(winner_color,
-			winner_player->Score, round_score);
+			winner_player->GetScore(), round_score);
 		return;
 	}
 
