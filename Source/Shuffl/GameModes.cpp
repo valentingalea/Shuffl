@@ -305,7 +305,9 @@ void AShufflXMPPGameMode::NextTurn()
 {
 	Super::NextTurn();
 
-	if (auto* pc = Cast<AXMPPPlayerCtrl>(RealPlayer->GetPlayerController(GetWorld()))) {
-		pc->SendSync();
+	if (UGameplayStatics::HasOption(OptionsString, XMPPGameMode::Option_Host)) {
+		if (auto* pc = Cast<AXMPPPlayerCtrl>(RealPlayer->GetPlayerController(GetWorld()))) {
+			pc->SendSync();
+		}
 	}
 }
