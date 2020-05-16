@@ -42,7 +42,6 @@ void FShufflXMPPService::Login(bool host, FString roomId)
 	if (Connection.IsValid() &&
 		(Connection->GetLoginStatus() == EXmppLoginStatus::ProcessingLogin ||
 		Connection->GetLoginStatus() == EXmppLoginStatus::LoggedIn)) return;
-	//TODO: the above doensn't protect against fast calls (button spam)
 
 	Color = host ? EPuckColor::Red : EPuckColor::Blue; //TODO: have a way for the user to choose
 	SelfId = host ? TEXT("host") : TEXT("invitee");
@@ -198,7 +197,7 @@ void FShufflXMPPService::OnChat(const TSharedRef<IXmppConnection>& connection,
 //	ShufflLog(TEXT("From: `%s` Msg: `%s`"), *fromJid.Id, *msg);
 	if (chatMsg->Timestamp < LoginTimestamp) {
 		ShufflErr(TEXT("got offline chat message!"));
-		return; //TODO: lift this to support offline invites?
+		return;
 	}
 
 	auto sys = UGameSubSys::Get(UGameSubSys::GetWorldContext());

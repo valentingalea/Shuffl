@@ -55,6 +55,8 @@ namespace ChatCmd
 	static constexpr auto Bowl = TEXT("/bowl");
 }
 
+//#define VERBOSE
+
 void AXMPPPlayerCtrl::BeginPlay()
 {
 	Super::BeginPlay();
@@ -180,7 +182,9 @@ void AXMPPPlayerSpectator::OnReceiveChat(FString msg)
 	if (cmd == ChatCmd::NextTurn) {
 		auto* gameState = Cast<AShufflGameState>(GetWorld()->GetGameState());
 		int turnId = FCString::Atoi(*args[1]);
-	//	ShufflLog(TEXT("%s %i"), *cmd, turnId);
+#ifdef VERBOSE
+		ShufflLog(TEXT("%s %i"), *cmd, turnId);
+#endif
 
 		if (turnId == gameState->GlobalTurnCounter) {
 			GetWorld()->GetAuthGameMode<AShufflCommonGameMode>()->NextTurn();
@@ -196,14 +200,15 @@ void AXMPPPlayerSpectator::OnReceiveChat(FString msg)
 		float X = bit_cast(FCString::Atoi(*args[1]));
 		float Y = bit_cast(FCString::Atoi(*args[2]));
 		float Z = bit_cast(FCString::Atoi(*args[3]));
-	//	ShufflLog(TEXT("%s (%f) (%f) (%f)"), *cmd, X, Y, Z);
+#ifdef VERBOSE
+		ShufflLog(TEXT("%s (%f) (%f) (%f)"), *cmd, X, Y, Z);
+#endif
 
 		if (GetPuck()) {
 			GetPuck()->MoveTo(FVector(X, Y, Z));
 			PlayMode = EPlayerCtrlMode::Setup;
 		} else {
 			ShufflErr(TEXT("received Move cmd when puck not spawned!"));
-			//TODO: possibly save this and apply later when appropiate?
 		}
 
 		return;
@@ -212,7 +217,9 @@ void AXMPPPlayerSpectator::OnReceiveChat(FString msg)
 	if (cmd == ChatCmd::Throw) {
 		float X = bit_cast(FCString::Atoi(*args[1]));
 		float Y = bit_cast(FCString::Atoi(*args[2]));
-	//	ShufflLog(TEXT("%s (%f) (%f)"), *cmd, X, Y);
+#ifdef VERBOSE
+		ShufflLog(TEXT("%s (%f) (%f)"), *cmd, X, Y);
+#endif
 
 		if (X > ThrowForceMax || Y > ThrowForceMax) {
 			ShufflLog(TEXT("received invalid force!"));
@@ -254,8 +261,10 @@ void AXMPPPlayerSpectator::OnReceiveChat(FString msg)
 		for (auto i = TActorIterator<APuck>(GetWorld()); i; ++i) {
 			if (!other_pos.Contains(i->TurnId)) {
 				auto* gameState = Cast<AShufflGameState>(GetWorld()->GetGameState());
-			//	ShufflLog(TEXT("found bad puck during sync: %i <- %i"), 
-			//		gameState->GlobalTurnCounter, i->TurnId);
+#ifdef VERBOSE
+				ShufflLog(TEXT("found bad puck during sync: %i <- %i"), 
+					gameState->GlobalTurnCounter, i->TurnId);
+#endif
 				continue;
 			}
 
