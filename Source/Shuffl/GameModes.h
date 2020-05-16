@@ -29,7 +29,9 @@ class SHUFFL_API AShufflPlayerState : public APlayerState
 	GENERATED_BODY()
 
 public:
-	//`float Score` is inherited
+	using /*float*/ APlayerState::Score;
+	int GetScore() const;
+	void SetScore(int);
 
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = Shuffl)
 	EPuckColor Color = EPuckColor::Red;
@@ -37,8 +39,18 @@ public:
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = Shuffl)
 	uint8 PucksToPlay = ERound::PucksPerPlayer;
 
-	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty> &) const override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>&) const override;
 };
+
+inline int AShufflPlayerState::GetScore() const
+{
+	return Score;
+}
+
+inline void AShufflPlayerState::SetScore(int newScore)
+{
+	Score = newScore;
+}
 
 UCLASS()
 class SHUFFL_API AShufflGameState : public AGameState
