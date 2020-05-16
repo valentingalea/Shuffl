@@ -74,6 +74,12 @@ FString UGameSubSys::ShufflGetVersion()
 	return version;
 }
 
+FString UGameSubSys::ShufflGenerateFriendCode()
+{
+	auto crc = FCrc::StrCrc32<TCHAR>(*FGenericPlatformMisc::GetDeviceId());
+	return FString::Printf(TEXT("%x"), crc);
+}
+
 void UGameSubSys::Initialize(FSubsystemCollectionBase& Collection)
 {
 }
@@ -83,19 +89,24 @@ void UGameSubSys::Deinitialize()
 	XMPP.Logout();
 }
 
-bool UGameSubSys::XMPPGetLoggedIn(const UObject* context)
+EXMPPState UGameSubSys::XMPPGetState(const UObject* context)
 {
-	return Get(context)->XMPP.LoginTimestamp != FDateTime(0);
+	return Get(context)->XMPP.State;
 }
 
-void UGameSubSys::XMPPLogin(const UObject* context, EPuckColor color)
+void UGameSubSys::XMPPLogin(const UObject* context, bool host, FString roomName)
 {
-	Get(context)->XMPP.Login(color);
+	Get(context)->XMPP.Login(host, MoveTemp(roomName));
 }
 
 void UGameSubSys::XMPPLogout(const UObject* context)
 {
 	Get(context)->XMPP.Logout();
+}
+
+void UGameSubSys::XMPPJoinRoom(const UObject* context, FString name)
+{
+	Get(context)->XMPP.JoinRoom(MoveTemp(name));
 }
 
 void UGameSubSys::XMPPStartGame(const UObject* context)

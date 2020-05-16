@@ -23,16 +23,25 @@
 
 #include "XMPP.generated.h"
 
+UENUM(BlueprintType)
+enum class EXMPPState : uint8
+{
+	LoggedOut,
+	LoggedIn,
+	HostReady,
+	InviteeReady,
+	PlayingGame
+};
+
 USTRUCT()
 struct FShufflXMPPService
 {
 	GENERATED_BODY()
 
-	void Login(EPuckColor Color);
+	void Login(bool host, FString roomId);
 	void OnLogin(const FXmppUserJid&, bool, const FString&);
-
 	void Logout();
-
+	void JoinRoom(FString);
 	void StartGame(const UObject*);
 
 	void OnChat(const TSharedRef<IXmppConnection>&,
@@ -41,12 +50,13 @@ struct FShufflXMPPService
 	void SendChat(const FString&);
 
 	TSharedPtr<class IXmppConnection> Connection;
-	EPuckColor Color;
+	EPuckColor Color = EPuckColor::Red;
+	EXMPPState State = EXMPPState::LoggedOut;
 	FString SelfId;
-	FString OtherId;
+	FString RoomId;
 	FDateTime LoginTimestamp = FDateTime(0);
-	int32 HandshakeSyn;
-	int32 HandshakeAck;
+	int32 HandshakeSyn = 0;
+	int32 HandshakeAck = 0;
 };
 
 namespace XMPPGameMode //TODO: move these to .ini config

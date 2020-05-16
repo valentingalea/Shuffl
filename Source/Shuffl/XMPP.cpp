@@ -37,22 +37,17 @@ inline void TravelInvitee(const UObject* context, EPuckColor color)
 			XMPPGameMode::Name_Invitee, PuckColorToString(color), XMPPGameMode::Option_Invitee));
 }
 
-#define MUC /* multi user chat (i.e. via rooms)*/
-#ifdef MUC
-static TAutoConsoleVariable<FString> MUCRoom(TEXT("mucroom"), TEXT("theroom"), TEXT("XMPP tests"));
-#endif
-
-void FShufflXMPPService::Login(EPuckColor color)
+void FShufflXMPPService::Login(bool host, FString roomId)
 {
 	if (Connection.IsValid() &&
 		(Connection->GetLoginStatus() == EXmppLoginStatus::ProcessingLogin ||
 		Connection->GetLoginStatus() == EXmppLoginStatus::LoggedIn)) return;
 	//TODO: the above doensn't protect against fast calls (button spam)
 
-	Color = color;
-	SelfId = color == EPuckColor::Red ? TEXT("p1") : TEXT("p2");
-	OtherId = color == EPuckColor::Red ? TEXT("p2") : TEXT("p1");
-	FString defaultPassword = TEXT("123");
+	Color = host ? EPuckColor::Red : EPuckColor::Blue; //TODO: have a way for the user to choose
+	SelfId = host ? TEXT("host") : TEXT("invitee");
+	FString defaultPassword = TEXT("Shuffl");
+	RoomId = roomId;
 
 	FXmppServer server;
 	server.bUseSSL = true;
@@ -89,28 +84,34 @@ void FShufflXMPPService::OnLogin(const FXmppUserJid& userJid, bool bWasSuccess, 
 	presence.Status = EXmppPresenceStatus::Online;
 	Connection->Presence()->UpdatePresence(presence);
 
-#ifdef MUC
-	FXmppRoomConfig RoomConfig;
-	RoomConfig.RoomName = MUCRoom.GetValueOnGameThread();
-	RoomConfig.bIsPrivate = false;
-	RoomConfig.bIsPersistent = false;
+	if (SelfId == TEXT("host") && !RoomId.IsEmpty()) {
+		FXmppRoomConfig RoomConfig;
+		RoomConfig.RoomName = RoomId;
+		RoomConfig.bIsPrivate = false;
+		RoomConfig.bIsPersistent = false;
 
-	if (Color == EPuckColor::Red) {
 		Connection->MultiUserChat()->OnRoomCreated().AddLambda(
 			[](const TSharedRef<IXmppConnection>& conn, bool success,
-				const FXmppRoomId& roomId, const FString& err) {
+				const FXmppRoomId& roomId, const FString& err)
+			{
 				ShufflLog(TEXT("Room '%s' create Success=%s"),
 					*roomId, success ? TEXT("true") : TEXT("false"));
-		});
+			}
+		);
+		Connection->MultiUserChat()->OnRoomMemberJoin().AddLambda(
+			[self = SelfId, &state = State](const TSharedRef<IXmppConnection>& conn,
+				const FXmppRoomId& roomId, const FXmppUserJid& roomMemberJid)
+			{
+				ShufflLog(TEXT("Room '%s' user '%s' joined"), *roomId, *roomMemberJid.Id);
+				if (roomMemberJid.Id == self) return;
+
+				state = EXMPPState::HostReady;
+				if (auto sys = UGameSubSys::Get(UGameSubSys::GetWorldContext())) {
+					sys->OnXMPPStateChange.Broadcast(EXMPPState::HostReady);
+				}
+			}
+		);
 		Connection->MultiUserChat()->CreateRoom(RoomConfig.RoomName, SelfId, RoomConfig);
-	} else {
-		Connection->MultiUserChat()->OnJoinPublicRoom().AddLambda(
-			[](const TSharedRef<IXmppConnection>& conn, bool success,
-				const FXmppRoomId& roomId, const FString& err) {
-				ShufflLog(TEXT("Room '%s' joined Success=%s"),
-					*roomId, success ? TEXT("true") : TEXT("false"));
-		});
-		Connection->MultiUserChat()->JoinPublicRoom(RoomConfig.RoomName, SelfId);
 	}
 
 	Connection->MultiUserChat()->OnRoomChatReceived().AddLambda(
@@ -118,13 +119,12 @@ void FShufflXMPPService::OnLogin(const FXmppUserJid& userJid, bool bWasSuccess, 
 		const FXmppUserJid& from, const TSharedRef<FXmppChatMessage>& msg) {
 			OnChat(conn, from, msg);
 	});
-#else
-	Connection->PrivateChat()->OnReceiveChat().AddRaw(this, &FShufflXMPPService::OnChat);
-#endif
 
 	LoginTimestamp = FDateTime::UtcNow();
+
+	State = EXMPPState::LoggedIn;
 	if (auto sys = UGameSubSys::Get(UGameSubSys::GetWorldContext())) {
-		sys->OnXMPPUserLoginChange.Broadcast(true);
+		sys->OnXMPPStateChange.Broadcast(EXMPPState::LoggedIn);
 	}
 }
 
@@ -134,24 +134,54 @@ void FShufflXMPPService::Logout()
 		(Connection->GetLoginStatus() == EXmppLoginStatus::LoggedIn))) return;
 
 	Connection->OnLogoutComplete().AddLambda(
-		[&time = LoginTimestamp](const FXmppUserJid& userJid, bool bWasSuccess,
-			const FString& /*unused*/) {
-		ShufflLog(TEXT("Logout UserJid=%s Success=%s"),
-			*userJid.GetFullPath(), bWasSuccess ? TEXT("true") : TEXT("false"));
+		[&time = LoginTimestamp, &state = State](const FXmppUserJid& userJid, bool bWasSuccess,
+			const FString& /*unused*/)
+		{
+			ShufflLog(TEXT("Logout UserJid=%s Success=%s"),
+				*userJid.GetFullPath(), bWasSuccess ? TEXT("true") : TEXT("false"));
 
-		time = FDateTime(0);
-		if (auto sys = UGameSubSys::Get(UGameSubSys::GetWorldContext())) {
-			sys->OnXMPPUserLoginChange.Broadcast(false);
+			time = FDateTime(0);
+
+			state = EXMPPState::LoggedOut;
+			if (auto sys = UGameSubSys::Get(UGameSubSys::GetWorldContext())) {
+				sys->OnXMPPStateChange.Broadcast(EXMPPState::LoggedOut);
+			}
 		}
-	});
+	);
 
 	Connection->Logout();
 	FXmppModule::Get().RemoveConnection(Connection.ToSharedRef());
 }
 
+void FShufflXMPPService::JoinRoom(FString roomId)
+{
+	make_sure(Connection.IsValid());
+	make_sure(State == EXMPPState::LoggedIn);
+	make_sure(!roomId.IsEmpty());
+
+	RoomId = roomId;
+
+	Connection->MultiUserChat()->OnJoinPublicRoom().AddLambda(
+		[&state = State](const TSharedRef<IXmppConnection>& conn, bool success,
+			const FXmppRoomId& roomName, const FString& err)
+		{
+			ShufflLog(TEXT("Room '%s' joined Success=%s"),
+				*roomName, success ? TEXT("true") : TEXT("false"));
+			if (!success) return;
+
+			state = EXMPPState::InviteeReady;
+			if (auto sys = UGameSubSys::Get(UGameSubSys::GetWorldContext())) {
+				sys->OnXMPPStateChange.Broadcast(EXMPPState::InviteeReady);
+			}
+		}
+	);
+	Connection->MultiUserChat()->JoinPublicRoom(RoomId, SelfId);
+}
+
 void FShufflXMPPService::StartGame(const UObject* context)
 {
 	make_sure(Connection.IsValid());
+	make_sure(State == EXMPPState::HostReady);
 
 	HandshakeSyn = FMath::Rand();
 	SendChat(FString::Printf(TEXT("/travel-syn %i"), HandshakeSyn));
@@ -212,11 +242,13 @@ void FShufflXMPPService::OnChat(const TSharedRef<IXmppConnection>& connection,
 
 		TravelInvitee(sys->GetWorldContext(), Color);
 		SendChat(TEXT("/travel"));
+		sys->OnXMPPStateChange.Broadcast(EXMPPState::PlayingGame);
 		return;
 	}
 
 	if (cmd == TEXT("/travel")) {
 		TravelHost(sys->GetWorldContext(), Color);
+		sys->OnXMPPStateChange.Broadcast(EXMPPState::PlayingGame);
 		return;
 	}
 
@@ -229,11 +261,7 @@ void FShufflXMPPService::OnChat(const TSharedRef<IXmppConnection>& connection,
 void FShufflXMPPService::SendChat(const FString& msg)
 {
 	make_sure(Connection.IsValid());
+	make_sure(!RoomId.IsEmpty());
 
-#ifdef MUC
-	Connection->MultiUserChat()->SendChat(MUCRoom.GetValueOnGameThread(), msg, FString());
-#else
-	FXmppUserJid to(OtherId, Connection->GetServer().Domain);
-	Connection->PrivateChat()->SendChat(to, msg);
-#endif
+	Connection->MultiUserChat()->SendChat(RoomId, msg, FString());
 }

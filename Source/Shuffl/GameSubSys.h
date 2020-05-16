@@ -32,8 +32,8 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FEvent_PlayersChangeTurn,
 
 DECLARE_MULTICAST_DELEGATE_OneParam(FEvent_XMPPChatReceived,
 							FString);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FEvent_XMPPUserLoginChange,
-							bool, LoggedIn);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FEvent_XMPPStateChange,
+							EXMPPState, NewState);
 
 
 UCLASS()
@@ -69,17 +69,23 @@ public:
 	UFUNCTION(BlueprintPure)
 	static FString ShufflGetVersion();
 
+	UFUNCTION(BlueprintPure)
+	static FString ShufflGenerateFriendCode();
+
 //
 // XMPP multiplayer chat
 //
 	UFUNCTION(BlueprintPure, meta = (WorldContext = "WorldContextObject"))
-	static bool XMPPGetLoggedIn(const UObject* WorldContextObject);
+	static EXMPPState XMPPGetState(const UObject* WorldContextObject);
 
 	UFUNCTION(BlueprintCallable, meta = (WorldContext = "WorldContextObject"))
-	static void XMPPLogin(const UObject* WorldContextObject, EPuckColor Color);
+	static void XMPPLogin(const UObject* WorldContextObject, bool Host, FString RoomName);
 
 	UFUNCTION(BlueprintCallable, meta = (WorldContext = "WorldContextObject"))
 	static void XMPPLogout(const UObject* WorldContextObject);
+
+	UFUNCTION(BlueprintCallable, meta = (WorldContext = "WorldContextObject"))
+	static void XMPPJoinRoom(const UObject* WorldContextObject, FString RoomName);
 
 	UFUNCTION(BlueprintCallable, meta = (WorldContext = "WorldContextObject"))
 	static void XMPPStartGame(const UObject* WorldContextObject);
@@ -90,5 +96,5 @@ public:
 	FEvent_XMPPChatReceived OnXMPPChatReceived;
 
 	UPROPERTY(BlueprintAssignable)
-	FEvent_XMPPUserLoginChange OnXMPPUserLoginChange;
+	FEvent_XMPPStateChange OnXMPPStateChange;
 };
