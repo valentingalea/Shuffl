@@ -116,6 +116,12 @@ void APuck::OnResting()
 	FBox puckVol = GetBoundingBox();
 	if (killVol.Intersect(puckVol)) {
 		Destroy();
+	} else {
+		//HACK: send a sync for this puck (the game mode will choose which side
+		//to send to, and redirect the request via the Player Ctrl)
+		if (auto* gm = GetWorld()->GetAuthGameMode<AShufflXMPPGameMode>()) {
+			gm->SyncPuck(TurnId);
+		}
 	}
 
 	// abort if next turn already happened

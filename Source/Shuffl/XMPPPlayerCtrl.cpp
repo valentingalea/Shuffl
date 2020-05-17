@@ -119,12 +119,14 @@ void AXMPPPlayerCtrl::SwitchToDetailView()
 	Super::SwitchToDetailView();
 }
 
-void AXMPPPlayerCtrl::SendSync()
+//NOTE: originally this was a more general func, I am repurposing it to sync only 1 puck at at time
+void AXMPPPlayerCtrl::SendSync(int turnId)
 {
 	FString out;
 	int num = 0;
 	for (auto i = TActorIterator<APuck>(GetWorld()); i; ++i) {
-		if ((*i) == GetPuck()) continue;
+		if ((*i)->TurnId != turnId) continue;
+		//if ((*i) == GetPuck()) continue;
 
 		FVector p = i->GetActorLocation();
 		out += FString::Printf(TEXT(" %i %i %i %i"),

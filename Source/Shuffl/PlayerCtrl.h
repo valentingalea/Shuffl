@@ -166,7 +166,7 @@ public:
 
 	virtual void SwitchToDetailView() override; // to add debug
 
-	void SendSync();
+	void SendSync(int);
 
 private:
 	struct FShufflXMPPService* XMPP;

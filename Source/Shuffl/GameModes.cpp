@@ -301,13 +301,15 @@ void AShufflXMPPGameMode::HandleMatchIsWaitingToStart()
 	PlayOrder[1] = p2;
 }
 
-void AShufflXMPPGameMode::NextTurn()
+void AShufflXMPPGameMode::SyncPuck(int turnId)
 {
-	Super::NextTurn();
-
-	if (UGameplayStatics::HasOption(OptionsString, XMPPGameMode::Option_Host)) {
-		if (auto* pc = Cast<AXMPPPlayerCtrl>(RealPlayer->GetPlayerController(GetWorld()))) {
-			pc->SendSync();
+	// sync only in one direction i.e. the Host has (arbitrary) authority
+	if (!UGameplayStatics::HasOption(OptionsString, XMPPGameMode::Option_Host)) return;
+	
+	for (auto *i : PlayOrder) {
+		if (auto* pc = Cast<AXMPPPlayerCtrl>(i)) {
+			pc->SendSync(turnId);
+			return;
 		}
 	}
 }

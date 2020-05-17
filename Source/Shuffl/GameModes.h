@@ -125,5 +125,5 @@ class SHUFFL_API AShufflXMPPGameMode : public AShuffl2PlayersGameMode
 public:
 	virtual void HandleMatchIsWaitingToStart() override;
 
-	virtual void NextTurn() override;
+	void SyncPuck(int turnId);
 };
