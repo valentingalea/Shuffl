@@ -76,12 +76,13 @@ FString UGameSubSys::ShufflGetVersion()
 
 FString UGameSubSys::ShufflGenerateFriendCode()
 {
-	auto crc = FCrc::StrCrc32<TCHAR>(*FGenericPlatformMisc::GetDeviceId());
+	auto crc = FCrc::StrCrc32<TCHAR>(*FPlatformMisc::GetDeviceId());
 	return FString::Printf(TEXT("%x"), crc);
 }
 
 void UGameSubSys::Initialize(FSubsystemCollectionBase& Collection)
 {
+	ShufflLog(TEXT("%s"), *FPlatformMisc::GetDeviceId());
 }
 
 void UGameSubSys::Deinitialize()
