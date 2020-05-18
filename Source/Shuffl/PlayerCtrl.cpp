@@ -16,8 +16,6 @@
 #include "PlayerCtrl.h"
 
 #include "EngineUtils.h"
-#include "Misc/ConfigCacheIni.h"
-#include "CoreGlobals.h"
 #include "TimerManager.h"
 #include "Components/InputComponent.h"
 #include "Components/ArrowComponent.h"
@@ -77,22 +75,11 @@ void APlayerCtrl::SetupInputComponent() //TODO: extract the action names into sh
 {
 	Super::SetupInputComponent();
 
-	InputComponent->BindAction("Quit", IE_Released, this, &APlayerCtrl::OnQuit);
-
 	InputComponent->BindAction("Rethrow", IE_Released, this, &APlayerCtrl::RequestNewThrow);
 
 	InputComponent->BindTouch(EInputEvent::IE_Pressed, this, &APlayerCtrl::ConsumeTouchOn);
 	InputComponent->BindTouch(EInputEvent::IE_Repeat, this, &APlayerCtrl::ConsumeTouchRepeat);
 	InputComponent->BindTouch(EInputEvent::IE_Released, this, &APlayerCtrl::ConsumeTouchOff);
-}
-
-void APlayerCtrl::OnQuit()
-{
-	FString mapURL;
-	if (GConfig->GetString(TEXT("/Script/EngineSettings.GameMapsSettings"), 
-		TEXT("GameDefaultMap"), mapURL, GEngineIni)) {
-		ClientTravel(mapURL, ETravelType::TRAVEL_Absolute);
-	}
 }
 
 void APlayerCtrl::RequestNewThrow()
@@ -440,7 +427,6 @@ void AAIPlayerCtrl::SetupInputComponent()
 {
 	APlayerController::SetupInputComponent();
 
-	InputComponent->BindAction("Quit", IE_Released, this, &AAIPlayerCtrl::OnQuit);
 	InputComponent->BindAction("Rethrow", IE_Released, this, &AAIPlayerCtrl::RequestNewThrow);
 }
 

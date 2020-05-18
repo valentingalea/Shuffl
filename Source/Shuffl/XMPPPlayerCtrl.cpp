@@ -154,7 +154,6 @@ void AXMPPPlayerSpectator::SetupInputComponent()
 	// circumvent parent as to not inherit touch input
 	APlayerController::SetupInputComponent();
 
-	InputComponent->BindAction("Quit", IE_Released, this, &AXMPPPlayerSpectator::OnQuit);
 	InputComponent->BindAction("Rethrow", IE_Released, this, &AXMPPPlayerSpectator::RequestNewThrow);
 }
 

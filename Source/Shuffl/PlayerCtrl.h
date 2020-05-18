@@ -90,7 +90,6 @@ public:
 protected:
 	virtual void BeginPlay() override;
 	virtual void SetupInputComponent() override;
-	void OnQuit();
 
 	APuck* GetPuck();
 	virtual FVector MovePuckOnTouchPosition(FVector2D);
