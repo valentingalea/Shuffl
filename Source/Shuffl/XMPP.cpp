@@ -241,12 +241,14 @@ void FShufflXMPPService::OnChat(const TSharedRef<IXmppConnection>& connection,
 
 		TravelInvitee(sys->GetWorldContext(), Color);
 		SendChat(TEXT("/travel"));
+		State = EXMPPState::PlayingGame;
 		sys->OnXMPPStateChange.Broadcast(EXMPPState::PlayingGame);
 		return;
 	}
 
 	if (cmd == TEXT("/travel")) {
 		TravelHost(sys->GetWorldContext(), Color);
+		State = EXMPPState::PlayingGame;
 		sys->OnXMPPStateChange.Broadcast(EXMPPState::PlayingGame);
 		return;
 	}
