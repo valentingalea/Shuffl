@@ -12,7 +12,7 @@ Open `Shuffl.uproject` in UE4 version 4.24+ with Visual Studio 2017+
 
 Coding style follows https://github.com/splash-damage/coding-standards with the exception that braces inside functions are K&R style
 
-Issues and progress is tracked at https://dev.azure.com/valentin-galea/Shuffl/
+Issues and progress are tracked at https://dev.azure.com/valentin-galea/Shuffl/
 
 ## Licence
 
