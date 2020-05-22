@@ -23,6 +23,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Algo/Sort.h"
 
+#include "Shuffl.h"
 #include "Puck.h"
 #include "PlayerCtrl.h"
 #include "ScoringVolume.h"
@@ -33,6 +34,7 @@ namespace MatchState
 {
 	const FName Round_Player1 = TEXT("Round_P1");
 	const FName Round_Player2 = TEXT("Round_P2");
+	const FName Round_XMPPSync = TEXT("Round_XMPPSync");
 	const FName Round_End = TEXT("Round_End");
 	const FName Round_WinnerDeclared = TEXT("Round_Winner");
 };
@@ -189,7 +191,7 @@ void AShuffl2PlayersGameMode::StartMatch()
 
 void AShuffl2PlayersGameMode::NextTurn()
 {
-	ensure(RealPlayer);
+	make_sure(RealPlayer);
 	auto *iterator = PlayOrder;
 	APlayerCtrl *next_player, *curr_player = nullptr;
 	decltype(MatchState) desiredState;
@@ -284,7 +286,7 @@ void AShufflXMPPGameMode::HandleMatchIsWaitingToStart()
 	RealPlayer = p2->Player = p1->Player;
 	p2->MyHUD = p1->MyHUD;
 
-	ensure(UGameplayStatics::HasOption(OptionsString, XMPPGameMode::Option_PuckColor));
+	make_sure(UGameplayStatics::HasOption(OptionsString, XMPPGameMode::Option_PuckColor));
 	auto startPuckColor = StringToPuckColor(
 		*UGameplayStatics::ParseOption(OptionsString, XMPPGameMode::Option_PuckColor));
 
@@ -299,6 +301,79 @@ void AShufflXMPPGameMode::HandleMatchIsWaitingToStart()
 
 	PlayOrder[0] = p1;
 	PlayOrder[1] = p2;
+
+	auto sys = UGameSubSys::Get(this);
+	make_sure(sys);
+	sys->OnXMPPChatReceived.AddUObject(this, &AShufflXMPPGameMode::OnReceiveChat);
+}
+
+void AShufflXMPPGameMode::NextTurn()
+{
+	if (UGameplayStatics::HasOption(OptionsString, XMPPGameMode::Option_Host)) {
+		Super::NextTurn();
+
+		if (GetMatchState() == MatchState::Round_End
+			|| GetMatchState() == MatchState::Round_WinnerDeclared) {
+			EPuckColor winner_color;
+			int round_score;
+			CalculateRoundScore(winner_color, round_score);
+
+			SyncPuck(-1); // send across all puck positions
+			auto sys = UGameSubSys::Get(this);
+			sys->XMPP.SendChat(FString::Printf(TEXT("/score-sync %s %i"), 
+				PuckColorToString(winner_color), round_score));
+		}
+	} else {
+		if (GetMatchState() == MatchState::Round_XMPPSync) {
+			return; // wait to receive above msg from host
+		}
+
+		int pucks_remaining = 0;
+		for (auto* i : PlayOrder) {
+			auto *ps = i->GetPlayerState<AShufflPlayerState>();
+			pucks_remaining += ps->PucksToPlay;
+		}
+
+		if (pucks_remaining == 0) {
+			SetMatchState(MatchState::Round_XMPPSync);
+		} else {
+			Super::NextTurn();
+		}
+	}
+}
+
+void AShufflXMPPGameMode::OnReceiveChat(FString msg)
+{
+	if (msg.Contains("/score-sync")) {
+		if (UGameplayStatics::HasOption(OptionsString, XMPPGameMode::Option_Invitee)) {
+			ensure(GetMatchState() == MatchState::Round_XMPPSync);
+
+			TArray<FString> args;
+			msg.ParseIntoArrayWS(args);
+			EPuckColor winner_color = StringToPuckColor(*args[1]);
+			int round_score = FCString::Atoi(*args[2]);
+
+			AShufflPlayerState* winner_player = nullptr;
+			for (auto* i : PlayOrder) {
+				auto* ps = i->GetPlayerState<AShufflPlayerState>();
+				if (ps->Color == winner_color) {
+					winner_player = ps;
+				}
+				ps->PucksToPlay = ERound::PucksPerPlayer;
+			}
+
+			winner_player->SetScore(winner_player->GetScore() + round_score);
+			if (winner_player->GetScore() >= UGameSubSys::ShufflGetWinningScore()) {
+				SetMatchState(MatchState::Round_WinnerDeclared);
+			}
+			else {
+				SetMatchState(MatchState::Round_End);
+			}
+
+			auto* pc = Cast<APlayerCtrl>(RealPlayer->PlayerController);
+			pc->HandleScoreCounting(winner_color, winner_player->GetScore(), round_score);
+		}
+	}
 }
 
 void AShufflXMPPGameMode::SyncPuck(int turnId)

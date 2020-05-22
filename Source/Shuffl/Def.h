@@ -60,6 +60,7 @@ namespace MatchState
 	// all our new states are extensions of this state: `AGameMode::MatchState::InProgress`
 	extern const FName Round_Player1;
 	extern const FName Round_Player2;
+	extern const FName Round_XMPPSync; /* only during online matches via XMPP chat */
 	extern const FName Round_End;
 	extern const FName Round_WinnerDeclared;
 };

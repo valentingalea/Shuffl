@@ -165,7 +165,7 @@ public:
 
 	virtual void SwitchToDetailView() override; // to add debug
 
-	void SendSync(int);
+	void SendSync(int); //turnId: negative means all, other send only that puck
 
 private:
 	struct FShufflXMPPService* XMPP;
