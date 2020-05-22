@@ -114,11 +114,6 @@ void AXMPPPlayerCtrl::SetupBowling()
 	XMPP->SendChat(FString::Printf(TEXT("%s"), ChatCmd::Bowl));
 }
 
-void AXMPPPlayerCtrl::SwitchToDetailView()
-{
-	Super::SwitchToDetailView();
-}
-
 void AXMPPPlayerCtrl::SendSync(int turnId)
 {
 	FString out;
@@ -165,11 +160,6 @@ void AXMPPPlayerSpectator::RequestNewThrow()
 		ChatCmd::NextTurn, gameState->GlobalTurnCounter));
 
 	GetWorld()->GetAuthGameMode<AShufflCommonGameMode>()->NextTurn();
-}
-
-void AXMPPPlayerSpectator::SwitchToDetailView()
-{
-	Super::SwitchToDetailView();
 }
 
 void AXMPPPlayerSpectator::OnReceiveChat(FString msg)

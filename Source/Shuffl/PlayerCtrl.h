@@ -163,8 +163,6 @@ public:
 	virtual FVector2D DoSlingshot() override;
 	virtual void SetupBowling() override;
 
-	virtual void SwitchToDetailView() override; // to add debug
-
 	void SendSync(int); //turnId: negative means all, other send only that puck
 
 private:
@@ -181,7 +179,6 @@ public:
 	virtual void SetupInputComponent() override;
 
 	virtual void RequestNewThrow() override;
-	virtual void SwitchToDetailView() override; // to add debug
 	virtual void HandleTutorial(bool /*show*/) override;
 
 	void OnReceiveChat(FString);
