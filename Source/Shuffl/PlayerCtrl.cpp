@@ -151,6 +151,8 @@ void APlayerCtrl::ConsumeTouchOn(const ETouchIndex::Type fingerIndex, const FVec
 		return;
 	}
 
+	ThrowStartTime = GetWorld()->GetRealTimeSeconds();
+
 	if (PlayMode == EPlayerCtrlMode::Spin) {
 		SpinStartPoint = FVector2D(location);
 		return;
@@ -159,7 +161,6 @@ void APlayerCtrl::ConsumeTouchOn(const ETouchIndex::Type fingerIndex, const FVec
 	if (PlayMode != EPlayerCtrlMode::Setup) return;
 	PlayMode = EPlayerCtrlMode::Throw; // depending on vertical dir this could turn into Slingshot
 
-	ThrowStartTime = GetWorld()->GetRealTimeSeconds();
 	ThrowStartPoint = FVector2D(location);
 	TouchStartHitResult = ProjectScreenPoint(this, ThrowStartPoint);
 
